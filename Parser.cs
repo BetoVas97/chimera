@@ -735,4 +735,3 @@ namespace Chimera {
             }
         }
     }
-}
