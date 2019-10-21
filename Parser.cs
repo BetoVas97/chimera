@@ -733,5 +733,6 @@ namespace Chimera {
                     throw new SyntaxError(firstOfRelationalOperator,
                                           tokenStream.Current);
             }
+        }
         
     }
