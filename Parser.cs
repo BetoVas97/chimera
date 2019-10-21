@@ -152,7 +152,7 @@ namespace Chimera
                 do
                 {
                     constantList.Add(ConstDeclaration());
-                } while (CurrentToken == TokenCategory.IDENTIFIER);
+                } while (CurrentToken == TokenCategory.CONST);
             }
             if (CurrentToken == TokenCategory.VAR)
             {

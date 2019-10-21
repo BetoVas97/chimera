@@ -41,7 +41,6 @@ namespace Chimera
               | (?<Coma>                [,]                     ) 
               | (?<ParenthesisOpen>     [(]                     )
               | (?<ParenthesisClose>    [)]                     )
-              | (?<Div>                 [/]                     ) 
               | (?<Identifier>          [A-Za-z][A-Za-z0-9_]*   ) 
               | (?<Less>                [<]                     ) 
               | (?<Minus>               [-]                     ) 
@@ -65,6 +64,7 @@ namespace Chimera
                 {"boolean", TokenCategory.BOOL},
                 {"const", TokenCategory.CONST},
                 {"do", TokenCategory.DO},
+                {"div", TokenCategory.DIV},
                 {"else", TokenCategory.ELSE},
                 {"elseif", TokenCategory.ELSEIF},
                 {"end", TokenCategory.END},
@@ -124,7 +124,6 @@ namespace Chimera
                 {"Colon", TokenCategory.COLON},
                 {"ColonEqual", TokenCategory.COLON_EQUAL},
                 {"Coma", TokenCategory.COMA},
-                {"Div", TokenCategory.DIV},
                 {"Identifier", TokenCategory.IDENTIFIER},
                 {"IntLiteral", TokenCategory.INT_LITERAL},
                 {"Less", TokenCategory.LESS},
@@ -270,6 +269,7 @@ namespace Chimera
                         state = State.NORMAL;
                         //var newToken = newTokenCommentString(concatenatedString, TokenCategory.COMMENT_LINE, commentStringIndex);
                         commentStringIndex = 0;
+                        concatenatedString = "";
                         row++;
                         continue;
                     }
@@ -289,6 +289,7 @@ namespace Chimera
                         state = State.NORMAL;
                         //var newToken = newTokenCommentString(concatenatedString, TokenCategory.COMMENT_BLOCK, commentStringIndex);
                         commentStringIndex = 0;
+                        concatenatedString = "";
                         continue;
                     }
                     else
@@ -347,6 +348,7 @@ namespace Chimera
                     {
                         //Console.WriteLine("****entre al final de un string*****");
                         var newToken = newTokenCommentString(concatenatedString, TokenCategory.STRING_LITERAL, commentStringIndex);
+                        concatenatedString = "";
                         commentStringIndex = 0;
                         state = State.NORMAL;
                         yield return newToken;
