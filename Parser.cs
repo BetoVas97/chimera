@@ -110,9 +110,6 @@ namespace Chimera
                 TokenCategory.FALSE,
                 TokenCategory.BRACE_OPEN
             };
-        //**************************************************** */
-        //**************************************************** */
-        //**************************************************** */
 
 
         IEnumerator<Token> tokenStream;
@@ -144,12 +141,31 @@ namespace Chimera
 
         public Node Program()
         {
-            var declList = new DeclarationList();
+            var constantList = new ConstantDeclarationList();
+            var varList = new VariableDeclarationList();
+            var procList = new ProcedureDeclarationList();
             var stmtList = new StatementList();
 
-            while (firstOfDeclaration.Contains(CurrentToken))
+            //IF-> do while because it's one or more times
+            if (CurrentToken == TokenCategory.CONST)
             {
-                declList.Add(Declaration());
+                do
+                {
+                    constantList.Add(ConstDeclaration());
+                } while (CurrentToken == TokenCategory.IDENTIFIER);
+            }
+            if (CurrentToken == TokenCategory.VAR)
+            {
+                do
+                {
+                    varList.Add(VariableDeclaration());
+                } while (CurrentToken == TokenCategory.IDENTIFIER);
+            }
+
+            //just while because it's zero or more times
+            while (CurrentToken == TokenCategory.PROCEDURE)
+            {
+                procList.Add(ProcedureDeclaration());
             }
             Expect(TokenCategory.PROGRAM);
 
@@ -162,46 +178,59 @@ namespace Chimera
             Expect(TokenCategory.EOF);
 
             return new Program() {
-                declList,
+                /*constantList,
+                varList,
+                procList,*/
                 stmtList
             };
         }
-        //Pendiente
-        public Node Declaration()
+
+        public Node VariableDeclaration()
         {
-            var result = new Declaration()
+            var varD = new VariableDeclarationList()
             {
-                AnchorToken = Type()
+                AnchorToken = Expect(TokenCategory.VAR)
             };
-            if (CurrentToken == TokenCategory.CONST)
+            do
             {
-                Expect(TokenCategory.CONST);
-                do
+                var ide = new Identifier()
                 {
-                    ConstDeclaration();
-                } while (CurrentToken == TokenCategory.IDENTIFIER);
-            }
+                    AnchorToken = Expect(TokenCategory.IDENTIFIER)
+                };
 
-            if (CurrentToken == TokenCategory.VAR)
-            {
-                Expect(TokenCategory.VAR);
-                do
+                while (CurrentToken == TokenCategory.COMA)
                 {
-                    ParameterDeclaration();
-                } while (CurrentToken == TokenCategory.IDENTIFIER);
-            }
+                    var coma = new Identifier()
+                    {
+                        AnchorToken = Expect(TokenCategory.COMA)
+                    };
+                    var ide2 = new Identifier()
+                    {
+                        AnchorToken = Expect(TokenCategory.IDENTIFIER)
+                    };
+                    coma.Add(ide);
+                    coma.Add(ide2);
+                    ide = coma;
+                }
+                var colon = new Identifier()
+                {
+                    AnchorToken = Expect(TokenCategory.COLON)
+                };
+                colon.Add(ide);
+                colon.Add(Type());
+                Expect(TokenCategory.SEMICOLON);
+                varD.Add(colon);
 
-            while (CurrentToken == TokenCategory.PROCEDURE)
-            {
-                ProcedureDeclaration();
-            }
+            } while (CurrentToken == TokenCategory.IDENTIFIER);
 
-            return result;
+
+
+            return varD;
         }
 
         public Node ConstDeclaration()
         {
-            var result = new ConstDeclaration()
+            /*var result = new ConstDeclaration()
             {
                 AnchorToken = Expect(TokenCategory.IDENTIFIER)
             };
@@ -209,57 +238,120 @@ namespace Chimera
             Expect(TokenCategory.COLON_EQUAL);
             result.Add(Literal());
             Expect(TokenCategory.SEMICOLON);
+            return result;*/
+            Expect(TokenCategory.CONST);
+            var idToken = Expect(TokenCategory.IDENTIFIER);
+            Expect(TokenCategory.COLON_EQUAL);
+            var lit = Literal();
+            Expect(TokenCategory.SEMICOLON);
+            var result = new ConstDeclaration() { lit };
+            result.AnchorToken = idToken;
             return result;
         }
 
-        //PENDIENTE
+
         public Node ParameterDeclaration()
         {
             var result = Expect(TokenCategory.IDENTIFIER);
             var list = new IdentifierList();
             while (CurrentToken == TokenCategory.COMA)
             {
-                result.Add(Expect(TokenCategory.COMA));
-                return (Expect(TokenCategory.IDENTIFIER));
+                list.Add(new Identifier()
+                {
+                    AnchorToken = Expect(TokenCategory.IDENTIFIER)
+                });
+
             }
             Expect(TokenCategory.COLON);
             var type = Type();
             Expect(TokenCategory.SEMICOLON);
-            type.Add(result);
-            return type;
+            var temp = new ParameterDeclaration() { list, type };
+            temp.AnchorToken = result;
+            return temp;
         }
-
-        //Pendiente
         public Node ProcedureDeclaration()
         {
-            Expect(TokenCategory.PROCEDURE);
+            var procT = Expect(TokenCategory.PROCEDURE);
             var result = new ProcedureDeclaration()
             {
                 AnchorToken = Expect(TokenCategory.IDENTIFIER)
 
             };
+            var parameterList = new ParamaterDeclarationList();
+            var type = new Type();
+            var constantList = new ConstantDeclarationList();
+            var varList = new VariableDeclarationList();
+            var statementList = new StatementList();
+
             Expect(TokenCategory.PARENTHESIS_OPEN);
             while (CurrentToken == TokenCategory.IDENTIFIER)
             {
-                ParameterDeclaration();
+                parameterList.Add(ParameterDeclaration());
             }
             Expect(TokenCategory.PARENTHESIS_CLOSE);
             if (CurrentToken == TokenCategory.COLON)
             {
                 Expect(TokenCategory.COLON);
-                Type();
+               type.Add(Type());
             }
             Expect(TokenCategory.SEMICOLON);
-            if (firstOfDeclaration.Contains(CurrentToken))
-                Declaration();
+            if (CurrentToken == TokenCategory.CONST)
+            {
+                do
+                {
+                    constantList.Add(ConstDeclaration());
+                } while (CurrentToken == TokenCategory.IDENTIFIER);
+            }
+            if (CurrentToken == TokenCategory.VAR)
+            {
+                do
+                {
+                    varList.Add(VariableDeclaration());
+                } while (CurrentToken == TokenCategory.IDENTIFIER);
+            }
+
             Expect(TokenCategory.BEGIN);
             while (firstOfStatement.Contains(CurrentToken))
             {
-                Statement();
+                statementList.Add(Statement());
             }
             Expect(TokenCategory.END);
             Expect(TokenCategory.SEMICOLON);
-            return result;
+            var temp= new ProcedureDeclaration(){result,parameterList,type,
+            constantList,varList,statementList
+                            };
+            temp.AnchorToken = procT;
+            return temp;
+        }
+
+        public Node Literal()
+        {
+            /*if (CurrentToken == TokenCategory.BRACE_OPEN)
+                return List();
+
+            else if (CurrentToken != TokenCategory.BRACE_OPEN)
+                return SimpleLiteral();
+
+            else
+            {
+                throw new SyntaxError(firstOfLiteral,
+                                          tokenStream.Current);
+            }*/
+
+            switch (CurrentToken)
+            {
+                case TokenCategory.BRACE_OPEN:
+                    return List();
+                case TokenCategory.INT_LITERAL:
+                    return SimpleLiteral();
+                case TokenCategory.STRING_LITERAL:
+                    return SimpleLiteral();
+                case TokenCategory.BOOLEAN_LITERAL:
+                    return SimpleLiteral();
+                default:
+                    throw new SyntaxError(firstOfSimpleExpression,
+                                        tokenStream.Current);
+            }
         }
 
         public Node SimpleLiteral()
@@ -277,7 +369,13 @@ namespace Chimera
                     {
                         AnchorToken = Expect(TokenCategory.STRING_LITERAL)
                     };
-                case TokenCategory.TRUE:
+
+                case TokenCategory.BOOLEAN_LITERAL:
+                    return new BooleanLiteral()
+                    {
+                        AnchorToken = Expect(TokenCategory.BOOLEAN_LITERAL)
+                    };
+                /*case TokenCategory.TRUE:
                     return new TrueLiteral()
                     {
                         AnchorToken = Expect(TokenCategory.TRUE)
@@ -288,7 +386,7 @@ namespace Chimera
                     return new FalseLiteral()
                     {
                         AnchorToken = Expect(TokenCategory.FALSE)
-                    };
+                    };*/
 
 
                 default:
@@ -297,25 +395,11 @@ namespace Chimera
             }
         }
 
-        public Node Literal()
+       
+
+        public Token SimpleType() //It was of type node
         {
-            if (CurrentToken == TokenCategory.BRACE_OPEN)
-                return List();
-
-            else if (CurrentToken != TokenCategory.BRACE_OPEN)
-                return SimpleLiteral();
-
-            else
-            {
-                throw new SyntaxError(firstOfLiteral,
-                                          tokenStream.Current);
-            }
-
-        }
-
-        public Node SimpleType()
-        {
-            switch (CurrentToken)
+            /*switch (CurrentToken)
             {
                 case TokenCategory.INTEGER:
                     return new IntegerLiteral()
@@ -336,14 +420,27 @@ namespace Chimera
                     };
                 default:
                     throw new SyntaxError(firstOfSimpleType,
-                                          tokenStream.Current);
+                 
+                 tokenStream.Current);
+            }*/
+            switch (CurrentToken)
+            {
+                case TokenCategory.INTEGER:
+                    return Expect(TokenCategory.INTEGER);
+                case TokenCategory.STRING:
+                    return Expect(TokenCategory.STRING);
+                case TokenCategory.BOOL:
+                    return Expect(TokenCategory.BOOL);
+                default:
+                    throw new SyntaxError(firstOfSimpleExpression,
+                                        tokenStream.Current);
             }
         }
 
         public Node Type()
         {
 
-            if (CurrentToken == TokenCategory.LIST)
+            /*if (CurrentToken == TokenCategory.LIST)
             {
                 Expect(TokenCategory.LIST);
                 Expect(TokenCategory.OF);
@@ -358,6 +455,40 @@ namespace Chimera
                 throw new SyntaxError(firstOfType,
                                               tokenStream.Current);
             }
+            */
+            switch (CurrentToken)
+            {
+                case TokenCategory.LIST:
+                    return ListType();
+                case TokenCategory.STRING:
+                    return new Type()
+                    {
+                        AnchorToken = SimpleType()
+                    };
+                case TokenCategory.BOOL:
+                    return new Type()
+                    {
+                        AnchorToken = SimpleType()
+                    };
+                case TokenCategory.INTEGER:
+                    return new Type()
+                    {
+                        AnchorToken = SimpleType()
+                    };
+                default:
+                    throw new SyntaxError(firstOfSimpleExpression,
+                                        tokenStream.Current);
+            }
+        }
+
+        public Node ListType()
+        {
+            Expect(TokenCategory.LIST);
+            Expect(TokenCategory.OF);
+            return new SimpleType()
+            {
+                AnchorToken = SimpleType()
+            };
         }
 
 
@@ -366,11 +497,7 @@ namespace Chimera
             switch (CurrentToken)
             {
                 case TokenCategory.IDENTIFIER:
-                    Expect(TokenCategory.IDENTIFIER);
-                    if (CurrentToken == TokenCategory.PARENTHESIS_OPEN)
-                        return Call();
-                    else if (CurrentToken == TokenCategory.BRACKET_OPEN || CurrentToken == TokenCategory.COLON_EQUAL)
-                        return Assignment();
+                    return AssignmentCallStatement();
                 case TokenCategory.IF:
                     return If();
                 case TokenCategory.LOOP:
@@ -387,28 +514,67 @@ namespace Chimera
             }
         }
 
-        //Pendiente
+        public Node AssignmentCallStatement()
+        {
+            var ident = Expect(TokenCategory.IDENTIFIER);
+            var expList = new ExpressionList();
+            var exp = new Expression();          
+            if (CurrentToken == TokenCategory.PARENTHESIS_OPEN)
+            {
+                Expect(TokenCategory.PARENTHESIS_OPEN);
+                if (firstOfSimpleExpression.Contains(CurrentToken))
+                {
+                    exp.Add(Expression());
+                    while (CurrentToken == TokenCategory.COMA)
+                    {
+                        Expect(TokenCategory.COMA);
+                        expList.Add(Expression());
+                    }
+                }
+                Expect(TokenCategory.PARENTHESIS_CLOSE);
+                Expect(TokenCategory.SEMICOLON);
+            }
+            else if (CurrentToken == TokenCategory.BRACKET_OPEN || CurrentToken == TokenCategory.COLON_EQUAL)
+            {
+                if (CurrentToken == TokenCategory.BRACKET_OPEN)
+                {
+                    Expect(TokenCategory.BRACKET_OPEN);
+                    exp.Add(Expression());
+                    Expect(TokenCategory.BRACKET_CLOSE);
+                }
+                Expect(TokenCategory.COLON_EQUAL);
+                expList.Add(Expression());
+                Expect(TokenCategory.SEMICOLON);
+            }
+            var result = new AssignmentCallStatement() { exp, expList };
+            result.AnchorToken = ident;
+            return result;
+        }
+
         public Node List()
         {
-            var result = new List();
-            Expect(TokenCategory.BRACE_OPEN);
+            var simpleList = new SimpleLiteralList();
+            var simpleLit = new SimpleLiteral();
+            var result = Expect(TokenCategory.BRACE_OPEN);
             if (firstOfSimpleLiteral.Contains(CurrentToken))
             {
-                Literal();
+                simpleLit.Add(SimpleLiteral());
                 while (CurrentToken == TokenCategory.COMA)
                 {
                     Expect(TokenCategory.COMA);
-                    SimpleLiteral();
+                    simpleList.Add(SimpleLiteral());
                 }
-                Expect(TokenCategory.BRACE_CLOSE);
+               
             }
-            return result;
+            Expect(TokenCategory.BRACE_CLOSE);
+            var temp = new List { simpleLit, simpleList };
+            temp.AnchorToken = result;
+            return temp;
         }
 
         public Node Call()
         {
-            var result = new Call();
-            CallStatement();
+            var result = new CallStatement();
             Expect(TokenCategory.SEMICOLON);
             return result;
         }
@@ -419,7 +585,7 @@ namespace Chimera
             var result = new Call();
             if (CurrentToken != TokenCategory.PARENTHESIS_CLOSE)
             {
-                Expression();
+                result.Add(Expression());
                 while (CurrentToken == TokenCategory.COMA)
                 {
                     Expect(TokenCategory.COMA);
@@ -430,7 +596,7 @@ namespace Chimera
             return result;
         }
 
-        public Node Assignment()
+        /*public Node Assignment()
         {
             var result = new Assignment();
             if (CurrentToken == TokenCategory.BRACKET_OPEN)
@@ -445,29 +611,27 @@ namespace Chimera
             Expect(TokenCategory.SEMICOLON);
 
             return result;
-        }
+        }*/
 
-        //PENDIENTE
         public Node If()
         {
-            var result = new If()
-            {
-                AnchorToken = Expect(TokenCategory.IF)
-            };
-            result.Add(Expression());
+            var tkIF = Expect(TokenCategory.IF);           
+            var exprList = new ExpressionList();
+            var statementList = new StatementList();
+            exprList.Add(Expression());
             Expect(TokenCategory.THEN);
             while (firstOfStatement.Contains(CurrentToken))
             {
-                Statement();
+                statementList.Add(Statement());
             }
             while (CurrentToken == TokenCategory.ELSEIF)
             {
                 Expect(TokenCategory.ELSEIF);
-                Expression();
+                exprList.Add(Expression());
                 Expect(TokenCategory.THEN);
                 while (firstOfStatement.Contains(CurrentToken))
                 {
-                    Statement();
+                    statementList.Add(Statement());
                 }
             }
             if (CurrentToken == TokenCategory.ELSE)
@@ -475,11 +639,13 @@ namespace Chimera
                 Expect(TokenCategory.ELSE);
                 while (firstOfStatement.Contains(CurrentToken))
                 {
-                    Statement();
+                    statementList.Add(Statement());
                 }
             }
             Expect(TokenCategory.END);
             Expect(TokenCategory.SEMICOLON);
+            var result=new If () {exprList,statementList};
+            result.AnchorToken = tkIF;
             return result;
         }
 
@@ -741,6 +907,8 @@ namespace Chimera
                 case TokenCategory.INT_LITERAL:
                     return SimpleLiteral();
                 case TokenCategory.STRING_LITERAL:
+                    return SimpleLiteral();
+                case TokenCategory.BOOLEAN_LITERAL:
                     return SimpleLiteral();
                 /*case TokenCategory.TRUE:
                     return TrueLiteral();

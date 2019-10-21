@@ -6,24 +6,38 @@
 */
 
 namespace Chimera {
-    class Program : Node { }
+    class List : Node { }
     class DeclarationList : Node { }
-    class Declaration : Node { }
+    class ConstantDeclarationList : Node { }
+    class VariableDeclarationList : Node { }
+    class ParamaterDeclarationList : Node { }
+    class ProcedureDeclarationList : Node { }
     class StatementList : Node { }
+    class ExpressionList: Node { }
+    class SimpleLiteralList:Node {}
+    class IdentifierList : Node { }
+    class Declaration : Node { }
+    class ConstDeclaration : Node { }
+    class ParameterDeclaration: Node { }
+    class ProcedureDeclaration : Node { }
+    class Program : Node { }
+    class SimpleType: Node { }
     class Call : Node {}
+    class Expression: Node { }
+    class AssignmentCallStatement:Node { }
+    class CallStatement: Node { }
     class Assignment : Node { }
     class If : Node {}
     class Loop : Node { }
     class For : Node { }
     class Return: Node { }
     class Exit : Node { }
-    class ConstDeclaration : Node {}
-    class List : Node { }   
     class Identifier : Node { }
-    class ProcedureDeclaration : Node {}
     class And : Node { }
     class Or: Node {}
     class Xor: Node {}
+    class Type : Node { }
+    class SimpleLiteral : Node { }
     class IntegerLiteral: Node {}
     class StringLiteral: Node {}
     class BooleanLiteral: Node {}
@@ -41,6 +55,4 @@ namespace Chimera {
     class MoreEqualOperator: Node {}
     class LessMoreOperator: Node { }
     class AssignOperator: Node { }
-    class IdentifierList: Node { }
-
 }

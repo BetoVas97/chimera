@@ -112,6 +112,7 @@ namespace Chimera {
         static readonly IDictionary<string, TokenCategory> nonKeywords =
             new Dictionary<string, TokenCategory>() {
                 {"Assign", TokenCategory.ASSIGN},
+                {"BooleanLiteral", TokenCategory.BOOLEAN_LITERAL},
                 {"BraceOpen", TokenCategory.BRACE_OPEN},
                 {"BraceClose", TokenCategory.BRACE_CLOSE},
                 {"BracketOpen", TokenCategory.BRACKET_OPEN},
