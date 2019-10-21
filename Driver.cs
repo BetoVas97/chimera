@@ -1,19 +1,8 @@
 /*
   Chimera compiler - Program driver.
-  Copyright (C) 2013 Ariel Ortiz, ITESM CEM
-  
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  Tomas Bravo Ortiz A01376668
+  Gerardo Ezequiel Magdaleno Hernandez A01377029
+  Jesus Heriberto Vasquez Sanchez A01377358
 */
 
 using System;
@@ -24,11 +13,11 @@ namespace Chimera {
 
     public class Driver {
 
-        const string VERSION = "0.1";
+        const string VERSION = "0.3";
 
         //-----------------------------------------------------------
         static readonly string[] ReleaseIncludes = {
-            "Lexical analysis"
+            "Lexical analysis","Syntax analysis","AST construction"
         };
 
         //-----------------------------------------------------------
@@ -65,33 +54,36 @@ namespace Chimera {
                 Environment.Exit(1);
             }
 
+            string errorLine = "";
             try {            
                 var inputPath = args[0];                
                 var input = File.ReadAllText(inputPath);
-                
-                Console.WriteLine(String.Format(
-                    "===== Tokens from: \"{0}\" =====", inputPath)
-                );
+
+
+                //Console.WriteLine(String.Format(
+                //    "===== Tokens from: \"{0}\" =====", inputPath)
+                //);
                 var count = 1;
                 foreach (var tok in new Scanner(input).Start()) {
-                    Console.WriteLine(String.Format("[{0}] {1}", 
-                                                    count++, tok)
-                    );
+                     //Console.WriteLine(String.Format("[{0}] {1}", count++, tok));
+                     errorLine = String.Format("[{0}] {1}", count++, tok);
                 }
+
 
                 var parser = new Parser(new Scanner(input).Start().GetEnumerator());
                 parser.Program();
                 Console.WriteLine("Syntax OK.");
-                
+
             } catch (Exception e) {
 
                 if (e is FileNotFoundException || e is SyntaxError) {
+                    Console.WriteLine(errorLine);
                     Console.Error.WriteLine(e.Message);
                     Environment.Exit(1);
                 }
 
                 throw;
-            }           
+            }        
         }
 
         //-----------------------------------------------------------
