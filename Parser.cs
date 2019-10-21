@@ -230,7 +230,7 @@ namespace Chimera
 
         public Node ConstDeclaration()
         {
-            /*var result = new ConstDeclaration()
+            var result = new ConstDeclaration()
             {
                 AnchorToken = Expect(TokenCategory.IDENTIFIER)
             };
@@ -238,14 +238,6 @@ namespace Chimera
             Expect(TokenCategory.COLON_EQUAL);
             result.Add(Literal());
             Expect(TokenCategory.SEMICOLON);
-            return result;*/
-            Expect(TokenCategory.CONST);
-            var idToken = Expect(TokenCategory.IDENTIFIER);
-            Expect(TokenCategory.COLON_EQUAL);
-            var lit = Literal();
-            Expect(TokenCategory.SEMICOLON);
-            var result = new ConstDeclaration() { lit };
-            result.AnchorToken = idToken;
             return result;
         }
 
@@ -326,7 +318,7 @@ namespace Chimera
 
         public Node Literal()
         {
-            /*if (CurrentToken == TokenCategory.BRACE_OPEN)
+            if (CurrentToken == TokenCategory.BRACE_OPEN)
                 return List();
 
             else if (CurrentToken != TokenCategory.BRACE_OPEN)
@@ -336,22 +328,8 @@ namespace Chimera
             {
                 throw new SyntaxError(firstOfLiteral,
                                           tokenStream.Current);
-            }*/
-
-            switch (CurrentToken)
-            {
-                case TokenCategory.BRACE_OPEN:
-                    return List();
-                case TokenCategory.INT_LITERAL:
-                    return SimpleLiteral();
-                case TokenCategory.STRING_LITERAL:
-                    return SimpleLiteral();
-                case TokenCategory.BOOLEAN_LITERAL:
-                    return SimpleLiteral();
-                default:
-                    throw new SyntaxError(firstOfSimpleExpression,
-                                        tokenStream.Current);
             }
+
         }
 
         public Node SimpleLiteral()
@@ -375,7 +353,8 @@ namespace Chimera
                     {
                         AnchorToken = Expect(TokenCategory.BOOLEAN_LITERAL)
                     };
-                /*case TokenCategory.TRUE:
+                    //Posible elimanar
+                case TokenCategory.TRUE:
                     return new TrueLiteral()
                     {
                         AnchorToken = Expect(TokenCategory.TRUE)
@@ -386,7 +365,7 @@ namespace Chimera
                     return new FalseLiteral()
                     {
                         AnchorToken = Expect(TokenCategory.FALSE)
-                    };*/
+                    };
 
 
                 default:
@@ -397,32 +376,8 @@ namespace Chimera
 
        
 
-        public Token SimpleType() //It was of type node
-        {
-            /*switch (CurrentToken)
-            {
-                case TokenCategory.INTEGER:
-                    return new IntegerLiteral()
-                    {
-                        AnchorToken = Expect(TokenCategory.INTEGER)
-                    };
-
-                case TokenCategory.STRING:
-                    return new StringLiteral()
-                    {
-                        AnchorToken = Expect(TokenCategory.STRING)
-                    };
-
-                case TokenCategory.BOOL:
-                    return new BooleanLiteral()
-                    {
-                        AnchorToken = Expect(TokenCategory.BOOL)
-                    };
-                default:
-                    throw new SyntaxError(firstOfSimpleType,
-                 
-                 tokenStream.Current);
-            }*/
+        public Token SimpleType()
+        { 
             switch (CurrentToken)
             {
                 case TokenCategory.INTEGER:
@@ -439,23 +394,6 @@ namespace Chimera
 
         public Node Type()
         {
-
-            /*if (CurrentToken == TokenCategory.LIST)
-            {
-                Expect(TokenCategory.LIST);
-                Expect(TokenCategory.OF);
-                return SimpleType();
-            }
-
-            else if (CurrentToken != TokenCategory.LIST)
-                return SimpleType();
-
-            else
-            {
-                throw new SyntaxError(firstOfType,
-                                              tokenStream.Current);
-            }
-            */
             switch (CurrentToken)
             {
                 case TokenCategory.LIST:
@@ -596,6 +534,7 @@ namespace Chimera
             return result;
         }
 
+        //Not requiered
         /*public Node Assignment()
         {
             var result = new Assignment();
@@ -910,10 +849,12 @@ namespace Chimera
                     return SimpleLiteral();
                 case TokenCategory.BOOLEAN_LITERAL:
                     return SimpleLiteral();
-                /*case TokenCategory.TRUE:
-                    return TrueLiteral();
+                case TokenCategory.TRUE:
+                    return SimpleLiteral();
+                   //return TrueLiteral();
                 case TokenCategory.FALSE:
-                    return FalseLiteral();*/
+                    return SimpleLiteral();
+                    //return FalseLiteral();
                 case TokenCategory.BRACE_OPEN:
                     return Literal();
 

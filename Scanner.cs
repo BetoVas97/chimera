@@ -5,15 +5,16 @@
   Gerardo Ezequiel Magdaleno Hernandez A01377029
   Jesus Heriberto Vasquez Sanchez A01377358 
 */
-
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Chimera {
+namespace Chimera
+{
 
-    class Scanner {
+    class Scanner
+    {
 
         readonly string input;
 
@@ -31,6 +32,7 @@ namespace Chimera {
               | (?<LessMore>            [<][>]                  )
               | (?<MoreEqual>           [>][=]                  )              
               | (?<Newline>             \n                      )
+              | (?<BooleanLiteral>          (true|false)              )
               | (?<BraceOpen>           [{]                     )
               | (?<BraceClose>          [}]                     )
               | (?<BracketOpen>         [[]                     )
@@ -50,8 +52,8 @@ namespace Chimera {
               | (?<StringLiteral>       [""]                    )           
               | (?<WhiteSpace>          \s                      )     # Must go anywhere after Newline.
               | (?<Other>               .                       )     # Must be last: match any other character.
-            ", 
-            RegexOptions.IgnorePatternWhitespace 
+            ",
+            RegexOptions.IgnorePatternWhitespace
                 | RegexOptions.Compiled
                 | RegexOptions.Multiline
             );
@@ -86,7 +88,7 @@ namespace Chimera {
                 {"then", TokenCategory.THEN},
                 {"true", TokenCategory.TRUE},
                 {"var", TokenCategory.VAR},
-                
+
                 {"WrInt", TokenCategory.IDENTIFIER},
                 {"WrStr", TokenCategory.IDENTIFIER},
                 {"WrBool", TokenCategory.IDENTIFIER},
@@ -112,7 +114,6 @@ namespace Chimera {
         static readonly IDictionary<string, TokenCategory> nonKeywords =
             new Dictionary<string, TokenCategory>() {
                 {"Assign", TokenCategory.ASSIGN},
-                {"BooleanLiteral", TokenCategory.BOOLEAN_LITERAL},
                 {"BraceOpen", TokenCategory.BRACE_OPEN},
                 {"BraceClose", TokenCategory.BRACE_CLOSE},
                 {"BracketOpen", TokenCategory.BRACKET_OPEN},
@@ -140,11 +141,13 @@ namespace Chimera {
                 {"StringLiteral", TokenCategory.STRING_LITERAL},
             };
 
-        public Scanner(string input) {
+        public Scanner(string input)
+        {
             this.input = input;
         }
 
-        public IEnumerable<Token> Start() {
+        public IEnumerable<Token> Start()
+        {
 
             var row = 1;
             var columnStart = 0;
@@ -156,46 +159,60 @@ namespace Chimera {
 
             Func<Match, TokenCategory, Token> newTok = (m, tc) =>
                 new Token(m.Value, tc, row, m.Index - columnStart + 1);
-            
+
             Func<string, TokenCategory, int, Token> newTokenCommentString = (lexeme, category, index) => {
                 var newToken = new Token(lexeme, category, commentStringRow, index - commentStringColumnStart + 1);
-                concatenatedString="";
+                concatenatedString = "";
                 return newToken;
             };
-                
 
-            foreach (Match m in regex.Matches(input)) {
-                if(state == State.NORMAL){
 
-                    if (m.Groups["Newline"].Success) {
+            foreach (Match m in regex.Matches(input))
+            {
+                if (state == State.NORMAL)
+                {
+
+                    if (m.Groups["Newline"].Success)
+                    {
 
                         // Found a new line.
                         row++;
                         columnStart = m.Index + m.Length;
 
-                    } else if (m.Groups["WhiteSpace"].Success ) {
+                    }
+                    else if (m.Groups["WhiteSpace"].Success)
+                    {
 
                         // Skip white space.
 
-                    } else if (m.Groups["PosibleKeyword"].Success) {
+                    }
+                    else if (m.Groups["PosibleKeyword"].Success)
+                    {
 
-                        if (keywords.ContainsKey(m.Value)) {
+                        if (keywords.ContainsKey(m.Value))
+                        {
 
                             // Matched string is a Chimera keyword.
-                            yield return newTok(m, keywords[m.Value]);                                               
+                            yield return newTok(m, keywords[m.Value]);
 
-                        } else { 
+                        }
+                        else
+                        {
 
                             // Otherwise it's just a plain identifier.
                             yield return newTok(m, TokenCategory.IDENTIFIER);
                         }
 
-                    } else if (m.Groups["Other"].Success) {
+                    }
+                    else if (m.Groups["Other"].Success)
+                    {
 
                         // Found an illegal character.
                         yield return newTok(m, TokenCategory.ILLEGAL_TOKEN);
 
-                    } else if (m.Groups["CommentLine"].Success) {
+                    }
+                    else if (m.Groups["CommentLine"].Success)
+                    {
 
                         // Found start of a line comment
                         state = State.READING_COMMENT_LINE;
@@ -204,7 +221,9 @@ namespace Chimera {
                         commentStringColumnStart = columnStart;
                         continue;
 
-                    } else if (m.Groups["CommentBlockOpen"].Success) {
+                    }
+                    else if (m.Groups["CommentBlockOpen"].Success)
+                    {
 
                         // Found start of a block comment
                         state = State.READING_COMMENT_BLOCK;
@@ -214,7 +233,9 @@ namespace Chimera {
 
                         continue;
 
-                    } else if (m.Groups["StringLiteral"].Success) {
+                    }
+                    else if (m.Groups["StringLiteral"].Success)
+                    {
 
                         // Found start of a string
                         state = State.READING_STRING_FIRST_QUOTE;
@@ -223,42 +244,57 @@ namespace Chimera {
                         commentStringColumnStart = columnStart;
                         continue;
 
-                    } else {
+                    }
+                    else
+                    {
 
                         // Match must be one of the non keywords.
-                        foreach (var name in nonKeywords.Keys) {
-                            if (m.Groups[name].Success) {
+                        foreach (var name in nonKeywords.Keys)
+                        {
+                            if (m.Groups[name].Success)
+                            {
                                 yield return newTok(m, nonKeywords[name]);
                                 break;
                             }
                         }
                     }
-                
-                } else if(state == State.READING_COMMENT_LINE){
-                    if (m.Groups["Newline"].Success) {
+
+                }
+                else if (state == State.READING_COMMENT_LINE)
+                {
+                    if (m.Groups["Newline"].Success)
+                    {
 
                         // Found a new line.
                         columnStart = m.Index + m.Length;
                         state = State.NORMAL;
                         //var newToken = newTokenCommentString(concatenatedString, TokenCategory.COMMENT_LINE, commentStringIndex);
                         commentStringIndex = 0;
-                        row ++;
+                        row++;
                         continue;
-                    } else {
-                        concatenatedString+=m.Value;
+                    }
+                    else
+                    {
+                        concatenatedString += m.Value;
                         continue;
                     }
 
-                } else if(state == State.READING_COMMENT_BLOCK){
-                    if (m.Groups["CommentBlockClose"].Success) {
+                }
+                else if (state == State.READING_COMMENT_BLOCK)
+                {
+                    if (m.Groups["CommentBlockClose"].Success)
+                    {
 
 
                         state = State.NORMAL;
                         //var newToken = newTokenCommentString(concatenatedString, TokenCategory.COMMENT_BLOCK, commentStringIndex);
                         commentStringIndex = 0;
                         continue;
-                    } else {
-                        if (m.Groups["Newline"].Success) {
+                    }
+                    else
+                    {
+                        if (m.Groups["Newline"].Success)
+                        {
 
                             // Found a new line.
 
@@ -266,11 +302,14 @@ namespace Chimera {
                             columnStart = m.Index + m.Length;
 
                         }
-                        concatenatedString+=m.Value;
+                        concatenatedString += m.Value;
                         continue;
                     }
-                } else if(state == State.READING_STRING_FIRST_QUOTE){
-                    if (m.Groups["Newline"].Success) {
+                }
+                else if (state == State.READING_STRING_FIRST_QUOTE)
+                {
+                    if (m.Groups["Newline"].Success)
+                    {
 
                         // Found a new line.
                         columnStart = m.Index + m.Length;
@@ -278,25 +317,34 @@ namespace Chimera {
                         var newToken = newTokenCommentString(concatenatedString, TokenCategory.ILLEGAL_TOKEN, commentStringIndex);
                         commentStringIndex = 0;
 
-                        row ++;
+                        row++;
                         yield return newToken;
-                    } else if (m.Groups["StringLiteral"].Success) {
+                    }
+                    else if (m.Groups["StringLiteral"].Success)
+                    {
 
                         // Found the second double quote
                         state = State.READING_STRING_SECOND_QUOTE;
                         continue;
-                    }else{
-                        concatenatedString+=m.Value;
+                    }
+                    else
+                    {
+                        concatenatedString += m.Value;
                         continue;
                     }
-                } else{  //Case State.READING_STRING_SECOND_QUOTE
-                    if (m.Groups["StringLiteral"].Success) {
+                }
+                else
+                {  //Case State.READING_STRING_SECOND_QUOTE
+                    if (m.Groups["StringLiteral"].Success)
+                    {
 
                         // Found another double quoted
                         state = State.READING_STRING_FIRST_QUOTE;
-                        concatenatedString+= "\"";
+                        concatenatedString += "\"";
                         continue;
-                    } else{
+                    }
+                    else
+                    {
                         //Console.WriteLine("****entre al final de un string*****");
                         var newToken = newTokenCommentString(concatenatedString, TokenCategory.STRING_LITERAL, commentStringIndex);
                         commentStringIndex = 0;
@@ -305,35 +353,47 @@ namespace Chimera {
 
 
                         /************* */
-                         if (m.Groups["Newline"].Success) {
+                        if (m.Groups["Newline"].Success)
+                        {
 
                             // Found a new line.
                             row++;
                             columnStart = m.Index + m.Length;
 
-                        } else if (m.Groups["WhiteSpace"].Success ) {
+                        }
+                        else if (m.Groups["WhiteSpace"].Success)
+                        {
 
                             // Skip white space.
 
-                        } else if (m.Groups["PosibleKeyword"].Success) {
+                        }
+                        else if (m.Groups["PosibleKeyword"].Success)
+                        {
 
-                            if (keywords.ContainsKey(m.Value)) {
+                            if (keywords.ContainsKey(m.Value))
+                            {
 
                                 // Matched string is a Chimera keyword.
-                                yield return newTok(m, keywords[m.Value]);                                               
+                                yield return newTok(m, keywords[m.Value]);
 
-                            } else { 
+                            }
+                            else
+                            {
 
                                 // Otherwise it's just a plain identifier.
                                 yield return newTok(m, TokenCategory.IDENTIFIER);
                             }
 
-                        } else if (m.Groups["Other"].Success) {
+                        }
+                        else if (m.Groups["Other"].Success)
+                        {
 
                             // Found an illegal character.
                             yield return newTok(m, TokenCategory.ILLEGAL_TOKEN);
 
-                        } else if (m.Groups["CommentLine"].Success) {
+                        }
+                        else if (m.Groups["CommentLine"].Success)
+                        {
 
                             // Found start of a line comment
                             state = State.READING_COMMENT_LINE;
@@ -342,7 +402,9 @@ namespace Chimera {
                             commentStringColumnStart = columnStart;
                             continue;
 
-                        } else if (m.Groups["CommentBlockOpen"].Success) {
+                        }
+                        else if (m.Groups["CommentBlockOpen"].Success)
+                        {
 
                             // Found start of a block comment
                             state = State.READING_COMMENT_BLOCK;
@@ -352,7 +414,9 @@ namespace Chimera {
 
                             continue;
 
-                        } else if (m.Groups["StringLiteral"].Success) {
+                        }
+                        else if (m.Groups["StringLiteral"].Success)
+                        {
 
                             // Found start of a string
                             state = State.READING_STRING_FIRST_QUOTE;
@@ -361,34 +425,40 @@ namespace Chimera {
                             commentStringColumnStart = columnStart;
                             continue;
 
-                        } else {
+                        }
+                        else
+                        {
 
                             // Match must be one of the non keywords.
-                            foreach (var name in nonKeywords.Keys) {
-                                if (m.Groups[name].Success) {
+                            foreach (var name in nonKeywords.Keys)
+                            {
+                                if (m.Groups[name].Success)
+                                {
                                     yield return newTok(m, nonKeywords[name]);
                                     break;
                                 }
                             }
                         }
-                //****************** */
+                        //****************** */
 
 
                     }
                 }
             }
-            
-            if(state != State.NORMAL){
+
+            if (state != State.NORMAL)
+            {
                 var category = TokenCategory.ILLEGAL_TOKEN;
-                if(state == State.READING_COMMENT_LINE){
+                if (state == State.READING_COMMENT_LINE)
+                {
                     category = TokenCategory.COMMENT_LINE;
-                } 
+                }
                 //yield return newTokenCommentString(concatenatedString, category, commentStringIndex);
             }
 
-            yield return new Token(null, 
-                                        TokenCategory.EOF, 
-                                        row, 
+            yield return new Token(null,
+                                        TokenCategory.EOF,
+                                        row,
                                         input.Length - columnStart + 1);
         }
     }
