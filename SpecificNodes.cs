@@ -35,4 +35,9 @@ namespace Chimera {
     class DivOperator: Node { }
     class RemOperator: Node { }
     class NotOperator: Node { }
+    class MoreOperator: Node { }
+    class LessOperator: Node { }
+    class LessEqualOperator: Node {}
+    class MoreEqualOperator: Node {}
+
 }

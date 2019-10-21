@@ -140,13 +140,11 @@ namespace Chimera {
 
             while (firstOfDeclaration.Contains(CurrentToken)) {
                 declList.Add(Declaration());
-                /*Declaration();*/
             }
             Expect(TokenCategory.PROGRAM);
 
             while (firstOfStatement.Contains(CurrentToken)) {
                 stmtList.Add(Statement());
-                /*Statement();*/
             }
             Expect(TokenCategory.END);
             Expect(TokenCategory.SEMICOLON);
@@ -444,7 +442,6 @@ namespace Chimera {
             return result;
         }
 
-        //
         public Node Loop(){
             var result = new Loop()
             {
@@ -458,7 +455,7 @@ namespace Chimera {
             Expect(TokenCategory.SEMICOLON);
             return result;
         }
-        //
+
         public Node For(){
             var result = new For()
             {
@@ -505,13 +502,13 @@ namespace Chimera {
             return LogicExpression();
         }
 
-        //PENDIENTE
         public Node LogicExpression(){
-            var result = null;
-            RelationalExpression();
+            var result = RelationalExpression();
             while (firstOfLogicOperator.Contains(CurrentToken)){
-                LogicOperator();
-                RelationalExpression();
+                var temp= LogicOperator();
+                temp.Add(result);
+                temp.Add(RelationalExpression());
+                result = temp;
             }
             return result;
         }
@@ -540,18 +537,17 @@ namespace Chimera {
            
         }
 
-        //PENDIENTE
         public Node RelationalExpression(){
-            var result = null;
-            SumExpression();
+            var result = SumExpression();
             while (firstOfRelationalOperator.Contains(CurrentToken)){
-                RelationalOperator();
-                SumExpression();
+                var temp = RelationalOperator();
+                temp.Add(result);
+                temp.Add(SumExpression());
+                result = temp;
             }
             return result;
         }
 
-        //
         public Node SumExpression(){
             var result = MulExpression();
             while (firstOfSumOperator.Contains(CurrentToken))
@@ -562,11 +558,6 @@ namespace Chimera {
                 result = temp;
             }
             return result;
-            /*MulExpression();
-            while (firstOfSumOperator.Contains(CurrentToken)){
-                SumOperator();
-                MulExpression();
-            }*/
         }
 
         public Node SumOperator(){
@@ -589,7 +580,7 @@ namespace Chimera {
                                           tokenStream.Current);
             }
         }
-//Posible fallo
+
         public Node MulExpression(){
             var result = UnaryExpression();
             while (firstOfMulOperator.Contains(CurrentToken))
@@ -600,11 +591,6 @@ namespace Chimera {
                 result = temp;
             }
             return result;
-                /*UnaryExpression();
-                while (firstOfMulOperator.Contains(CurrentToken)){
-                    MulOperator();
-                    UnaryExpression();
-                }*/
             }
 
         public Node MulOperator(){
@@ -651,83 +637,102 @@ namespace Chimera {
                 };
 
                 default:
-                    throw new SyntaxError(firstOfUnaryOperator,tokenStream.Current);
+                        return SimpleExpression();
+                        throw new SyntaxError(firstOfUnaryOperator,tokenStream.Current);
                 }
             }
-            return SimpleExpression();
+            
         }
 
-        //PENDIENTE
         public Node SimpleExpression(){
-            Node node = null;
             switch (CurrentToken){
                 case TokenCategory.PARENTHESIS_OPEN:
                     Expect(TokenCategory.PARENTHESIS_OPEN);
-                    Expression();
+                    var result= Expression();
                     Expect(TokenCategory.PARENTHESIS_CLOSE);
-                    break;
+
+                    return result;
 
                 case TokenCategory.IDENTIFIER:
-                    Expect(TokenCategory.IDENTIFIER);
+                    var resultID = new Identifier()
+                    {
+                        AnchorToken = Expect(TokenCategory.IDENTIFIER)
+                    };
                     if (CurrentToken == TokenCategory.PARENTHESIS_OPEN)
-                    CallStatement();
-                    break;
+                    {
+
+                        resultID.Add(CallStatement());
+                    }
+                    if(CurrentToken == TokenCategory.BRACE_OPEN)
+                    {
+                        Expect(TokenCategory.BRACE_OPEN);
+                        resultID.Add(Expression());
+                        Expect(TokenCategory.BRACE_CLOSE);
+                    }
+                    return resultID;
 
                 case TokenCategory.INT_LITERAL:
+                    return SimpleLiteral();
                 case TokenCategory.STRING_LITERAL:
+                    return SimpleLiteral();
                 case TokenCategory.TRUE:
+                    return TrueLiteral();
                 case TokenCategory.FALSE:
+                    return FalseLiteral();
                 case TokenCategory.BRACE_OPEN:
-                    Literal();
-                    break;
+                    return Literal();
 
                 default:
                     throw new SyntaxError(firstOfSimpleExpression,tokenStream.Current);
             }
-
-            if (CurrentToken == TokenCategory.BRACKET_OPEN){
-                Expect(TokenCategory.BRACKET_OPEN);
-                Expression();
-                Expect(TokenCategory.BRACKET_CLOSE);
-            }
-
-            return node;
         }
         
-        //PENDIENTE
         public Node RelationalOperator(){
-            var result = null;
             switch (CurrentToken){
 
                 case TokenCategory.ASSIGN:
-                    Expect(TokenCategory.ASSIGN);
-                    break;
+                    return new AssignOperator()
+                    {
+                        AnchorToken= Expect(TokenCategory.ASSIGN)
+                    };
 
                 case TokenCategory.LESS_MORE:
-                    Expect(TokenCategory.LESS_MORE);
-                    break;
+                    return new LessMoreOperator()
+                    {
+                        AnchorToken = Expect(TokenCategory.LESS_MORE)
+                    };
+
 
                 case TokenCategory.LESS:
-                    Expect(TokenCategory.LESS);
-                    break;
+                    return new LessOperator()
+                    {
+                        AnchorToken = Expect(TokenCategory.LESS)
+                    };
+ 
 
                 case TokenCategory.MORE:
-                    Expect(TokenCategory.MORE);
-                    break;
+                    return new MoreOperator()
+                    {
+                        AnchorToken= Expect(TokenCategory.MORE)
+            };
 
                 case TokenCategory.LESS_EQUAL:
-                    Expect(TokenCategory.LESS_EQUAL);
-                    break;
+                    return new LessEqualOperator()
+                    {
+                        AnchorToken= Expect(TokenCategory.LESS_EQUAL)
+                    };
+
 
                 case TokenCategory.MORE_EQUAL:
-                    Expect(TokenCategory.MORE_EQUAL);
-                    break;
+                    return new MoreEqualOperator()
+                    {
+                        AnchorToken = Expect(TokenCategory.MORE_EQUAL)
+            };
 
                 default:
                     throw new SyntaxError(firstOfRelationalOperator,
                                           tokenStream.Current);
             }
-            return result;
         }
     }
 }
