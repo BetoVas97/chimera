@@ -654,22 +654,22 @@ namespace Chimera {
                     return result;
 
                 case TokenCategory.IDENTIFIER:
-                    var result = new Identifier()
+                    var resultID = new Identifier()
                     {
                         AnchorToken = Expect(TokenCategory.IDENTIFIER)
                     };
                     if (CurrentToken == TokenCategory.PARENTHESIS_OPEN)
                     {
 
-                        result.Add(CallStatement());
+                        resultID.Add(CallStatement());
                     }
                     if(CurrentToken == TokenCategory.BRACE_OPEN)
                     {
                         Expect(TokenCategory.BRACE_OPEN);
-                        result.Add(Expression());
+                        resultID.Add(Expression());
                         Expect(TokenCategory.BRACE_CLOSE);
                     }
-                    return result;
+                    return resultID;
 
                 case TokenCategory.INT_LITERAL:
                     return SimpleLiteral();
