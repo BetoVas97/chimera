@@ -232,9 +232,9 @@ namespace Chimera
         {
             var result = new ConstDeclaration()
             {
-                AnchorToken = Expect(TokenCategory.IDENTIFIER)
+                AnchorToken = Expect(TokenCategory.CONST)
             };
-
+            Expect(TokenCategory.IDENTIFIER);
             Expect(TokenCategory.COLON_EQUAL);
             result.Add(Literal());
             Expect(TokenCategory.SEMICOLON);
@@ -835,11 +835,11 @@ namespace Chimera
 
                         resultID.Add(CallStatement());
                     }
-                    if (CurrentToken == TokenCategory.BRACE_OPEN)
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
                     {
-                        Expect(TokenCategory.BRACE_OPEN);
+                        Expect(TokenCategory.BRACKET_OPEN);
                         resultID.Add(Expression());
-                        Expect(TokenCategory.BRACE_CLOSE);
+                        Expect(TokenCategory.BRACKET_CLOSE);
                     }
                     return resultID;
 
