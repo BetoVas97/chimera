@@ -1,20 +1,9 @@
 /*
   Chimera compiler - This class performs the lexical analysis, 
   (a.k.a. scanning).
-  Copyright (C) 2013 Ariel Ortiz, ITESM CEM
-  
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  Tomas Bravo Ortiz A01376668
+  Gerardo Ezequiel Magdaleno Hernandez A01377029
+  Jesus Heriberto Vasquez Sanchez A01377358 
 */
 
 using System;
@@ -37,6 +26,7 @@ namespace Chimera {
               | (?<CommentBlockOpen>    [/][*]                  )
               | (?<CommentBlockClose>   [*][/]                  )
               | (?<IntLiteral>          \d+                     )
+              | (?<NotEqual>            [!][=]                  )
               | (?<LessEqual>           [<][=]                  )
               | (?<LessMore>            [<][>]                  )
               | (?<MoreEqual>           [>][=]                  )              
@@ -70,7 +60,7 @@ namespace Chimera {
             new Dictionary<string, TokenCategory>() {
                 {"and", TokenCategory.AND},
                 {"begin", TokenCategory.BEGIN},
-                {"bool", TokenCategory.BOOL},
+                {"boolean", TokenCategory.BOOL},
                 {"const", TokenCategory.CONST},
                 {"do", TokenCategory.DO},
                 {"else", TokenCategory.ELSE},
@@ -97,24 +87,24 @@ namespace Chimera {
                 {"true", TokenCategory.TRUE},
                 {"var", TokenCategory.VAR},
                 
-                {"WrInt", TokenCategory.WR_INT},
-                {"WrStr", TokenCategory.WR_STR},
-                {"WrBool", TokenCategory.WR_BOOL},
-                {"WrLn", TokenCategory.WR_LN},
-                {"RdInt", TokenCategory.RD_INT},
-                {"RdStr", TokenCategory.RD_STR},
-                {"AtStr", TokenCategory.AT_STR},
-                {"LenStr", TokenCategory.LEN_STR},
-                {"CmpStr", TokenCategory.CMP_STR},
-                {"CatStr", TokenCategory.CAT_STR},
-                {"LenLstInt", TokenCategory.LEN_LST_INT},
-                {"LenLstStr", TokenCategory.LEN_LST_STR},
-                {"LenLstBool", TokenCategory.LEN_LST_BOOL},
-                {"NewLstInt", TokenCategory.NEW_LST_INT},
-                {"NewLstStr", TokenCategory.NEW_LST_STR},
-                {"NewLstBool", TokenCategory.NEW_LST_BOOL},
-                {"IntToStr", TokenCategory.INT_TO_STR},
-                {"StrToInt", TokenCategory.STR_TO_INT},
+                {"WrInt", TokenCategory.IDENTIFIER},
+                {"WrStr", TokenCategory.IDENTIFIER},
+                {"WrBool", TokenCategory.IDENTIFIER},
+                {"WrLn", TokenCategory.IDENTIFIER},
+                {"RdInt", TokenCategory.IDENTIFIER},
+                {"RdStr", TokenCategory.IDENTIFIER},
+                {"AtStr", TokenCategory.IDENTIFIER},
+                {"LenStr", TokenCategory.IDENTIFIER},
+                {"CmpStr", TokenCategory.IDENTIFIER},
+                {"CatStr", TokenCategory.IDENTIFIER},
+                {"LenLstInt", TokenCategory.IDENTIFIER},
+                {"LenLstStr", TokenCategory.IDENTIFIER},
+                {"LenLstBool", TokenCategory.IDENTIFIER},
+                {"NewLstInt", TokenCategory.IDENTIFIER},
+                {"NewLstStr", TokenCategory.IDENTIFIER},
+                {"NewLstBool", TokenCategory.IDENTIFIER},
+                {"IntToStr", TokenCategory.IDENTIFIER},
+                {"StrToInt", TokenCategory.IDENTIFIER},
 
                 {"xor", TokenCategory.XOR},
             };
@@ -249,7 +239,7 @@ namespace Chimera {
                         // Found a new line.
                         columnStart = m.Index + m.Length;
                         state = State.NORMAL;
-                        var newToken = newTokenCommentString(concatenatedString, TokenCategory.COMMENT_LINE, commentStringIndex);
+                        //var newToken = newTokenCommentString(concatenatedString, TokenCategory.COMMENT_LINE, commentStringIndex);
                         commentStringIndex = 0;
                         row ++;
                         continue;
@@ -263,7 +253,7 @@ namespace Chimera {
 
 
                         state = State.NORMAL;
-                        var newToken = newTokenCommentString(concatenatedString, TokenCategory.COMMENT_BLOCK, commentStringIndex);
+                        //var newToken = newTokenCommentString(concatenatedString, TokenCategory.COMMENT_BLOCK, commentStringIndex);
                         commentStringIndex = 0;
                         continue;
                     } else {
@@ -306,18 +296,82 @@ namespace Chimera {
                         concatenatedString+= "\"";
                         continue;
                     } else{
+                        //Console.WriteLine("****entre al final de un string*****");
                         var newToken = newTokenCommentString(concatenatedString, TokenCategory.STRING_LITERAL, commentStringIndex);
                         commentStringIndex = 0;
+                        state = State.NORMAL;
+                        yield return newToken;
 
-                        if (m.Groups["Newline"].Success) {
+
+                        /************* */
+                         if (m.Groups["Newline"].Success) {
 
                             // Found a new line.
                             row++;
                             columnStart = m.Index + m.Length;
 
+                        } else if (m.Groups["WhiteSpace"].Success ) {
+
+                            // Skip white space.
+
+                        } else if (m.Groups["PosibleKeyword"].Success) {
+
+                            if (keywords.ContainsKey(m.Value)) {
+
+                                // Matched string is a Chimera keyword.
+                                yield return newTok(m, keywords[m.Value]);                                               
+
+                            } else { 
+
+                                // Otherwise it's just a plain identifier.
+                                yield return newTok(m, TokenCategory.IDENTIFIER);
+                            }
+
+                        } else if (m.Groups["Other"].Success) {
+
+                            // Found an illegal character.
+                            yield return newTok(m, TokenCategory.ILLEGAL_TOKEN);
+
+                        } else if (m.Groups["CommentLine"].Success) {
+
+                            // Found start of a line comment
+                            state = State.READING_COMMENT_LINE;
+                            commentStringIndex = m.Index;
+                            commentStringRow = row;
+                            commentStringColumnStart = columnStart;
+                            continue;
+
+                        } else if (m.Groups["CommentBlockOpen"].Success) {
+
+                            // Found start of a block comment
+                            state = State.READING_COMMENT_BLOCK;
+                            commentStringIndex = m.Index;
+                            commentStringRow = row;
+                            commentStringColumnStart = columnStart;
+
+                            continue;
+
+                        } else if (m.Groups["StringLiteral"].Success) {
+
+                            // Found start of a string
+                            state = State.READING_STRING_FIRST_QUOTE;
+                            commentStringIndex = m.Index;
+                            commentStringRow = row;
+                            commentStringColumnStart = columnStart;
+                            continue;
+
+                        } else {
+
+                            // Match must be one of the non keywords.
+                            foreach (var name in nonKeywords.Keys) {
+                                if (m.Groups[name].Success) {
+                                    yield return newTok(m, nonKeywords[name]);
+                                    break;
+                                }
+                            }
                         }
-                        state = State.NORMAL;
-                        yield return newToken;
+                //****************** */
+
 
                     }
                 }
@@ -328,7 +382,7 @@ namespace Chimera {
                 if(state == State.READING_COMMENT_LINE){
                     category = TokenCategory.COMMENT_LINE;
                 } 
-                yield return newTokenCommentString(concatenatedString, category, commentStringIndex);
+                //yield return newTokenCommentString(concatenatedString, category, commentStringIndex);
             }
 
             yield return new Token(null, 

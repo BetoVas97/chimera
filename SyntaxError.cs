@@ -1,19 +1,8 @@
 /*
   Buttercup compiler - Syntax error exception class.
-  Copyright (C) 2013 Ariel Ortiz, ITESM CEM
-  
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  Tomas Bravo Ortiz A01376668
+  Gerardo Ezequiel Magdaleno Hernandez A01377029
+  Jesus Heriberto Vasquez Sanchez A01377358 
 */
 
 using System;
@@ -24,8 +13,7 @@ namespace Chimera {
 
     class SyntaxError: Exception {
 
-        public SyntaxError(TokenCategory expectedCategory,
-                           Token token):
+        public SyntaxError(TokenCategory expectedCategory, Token token):
             base(String.Format(
                 "Syntax Error: Expecting {0} \n" +
                 "but found {1} (\"{2}\") at row {3}, column {4}.",
@@ -36,8 +24,7 @@ namespace Chimera {
                 token.Column)) {
         }
 
-        public SyntaxError(ISet<TokenCategory> expectedCategories,
-                           Token token):
+        public SyntaxError(ISet<TokenCategory> expectedCategories, Token token):
             base(String.Format(
                 "Syntax Error: Expecting one of {0}\n" +
                 "but found {1} (\"{2}\") at row {3}, column {4}.",
