@@ -178,9 +178,9 @@ namespace Chimera
             Expect(TokenCategory.EOF);
 
             return new Program() {
-                /*constantList,
+                constantList,
                 varList,
-                procList,*/
+                procList,
                 stmtList
             };
         }
@@ -452,6 +452,8 @@ namespace Chimera
             }
         }
 
+//divide in assigment statement and call statement
+//ExpressionLst not need just expression.
         public Node AssignmentCallStatement()
         {
             var ident = Expect(TokenCategory.IDENTIFIER);
@@ -544,11 +546,9 @@ namespace Chimera
                 result.Add(Expression());
                 Expect(TokenCategory.BRACKET_CLOSE);
             }
-
             Expect(TokenCategory.COLON_EQUAL);
             result.Add(Expression());
             Expect(TokenCategory.SEMICOLON);
-
             return result;
         }*/
 
@@ -785,33 +785,48 @@ namespace Chimera
             }
         }
 
-        public Node UnaryExpression()
-        {
-            while (firstOfUnaryOperator.Contains(CurrentToken))
-            {
-                switch (CurrentToken)
-                {
+        public Node UnaryExpression(){
 
-                    case TokenCategory.NOT:
-                        return new NotOperator()
-                        {
-                            AnchorToken = Expect(TokenCategory.NOT)
-                        };
-
-                    case TokenCategory.MINUS:
-                        return new SubstractionOperator()
-                        {
-                            AnchorToken = Expect(TokenCategory.MINUS)
-                        };
-
-                    default:
-                       
-                        throw new SyntaxError(firstOfUnaryOperator, tokenStream.Current);
+            if (firstOfUnaryOperator.Contains(CurrentToken)){
+                var expr = UnaryOperator();
+                while (firstOfUnaryOperator.Contains(CurrentToken)){
+                    var expr2 = UnaryOperator();
+                    expr2.Add(expr);
+                    expr = expr2;
                 }
+                var result = SimpleExpression();
 
+                expr.Add(result);
+
+                return result;
             }
+
+            else 
             return SimpleExpression();
 
+        }
+
+        public Node UnaryOperator()
+        {
+            switch (CurrentToken)
+            {
+
+                case TokenCategory.NOT:
+                    return new NotOperator()
+                    {
+                        AnchorToken = Expect(TokenCategory.NOT)
+                    };
+
+                case TokenCategory.MINUS:
+                    return new SubstractionOperator()
+                    {
+                        AnchorToken = Expect(TokenCategory.MINUS)
+                    };
+
+                default:
+                    throw new SyntaxError(firstOfUnaryOperator,
+                                          tokenStream.Current);
+            }
         }
 
         public Node SimpleExpression()
