@@ -13,11 +13,11 @@ namespace Chimera {
 
     public class Driver {
 
-        const string VERSION = "0.3";
+        const string VERSION = "0.4";
 
         //-----------------------------------------------------------
         static readonly string[] ReleaseIncludes = {
-            "Lexical analysis","Syntax analysis","AST construction"
+            "Lexical analysis","Syntax analysis","AST construction","Semantic analysis"
         };
 
         //-----------------------------------------------------------
@@ -58,9 +58,22 @@ namespace Chimera {
             try {            
                 var inputPath = args[0];                
                 var input = File.ReadAllText(inputPath);
-                
+                var parser = new Parser(new Scanner(input).Start().GetEnumerator());
+                var program = parser.Program();
+                Console.WriteLine("Syntax OK.");
 
+                var semantic = new SemanticAnalyzer();
+                semantic.Visit((dynamic)program);
 
+                //Console.WriteLine(program.ToStringTree());
+                Console.WriteLine("Semantics OK.");
+                Console.WriteLine();
+                Console.WriteLine("Symbol Table");
+                Console.WriteLine("============");
+                foreach (var entry in semantic.Table)
+                {
+                    Console.WriteLine(entry);
+                }
                 //Console.WriteLine(String.Format(
                 //    "===== Tokens from: \"{0}\" =====", inputPath)
                 //);
@@ -70,12 +83,6 @@ namespace Chimera {
                      //Console.WriteLine(String.Format("[{0}] {1}", count++, tok));
                      errorLine = String.Format("[{0}] {1}", count++, tok);
                 }*/
-
-
-                var parser = new Parser(new Scanner(input).Start().GetEnumerator());
-                var program = parser.Program();
-                Console.WriteLine(program.ToStringTree());
-
             } catch (Exception e) {
 
                 if (e is FileNotFoundException || e is SyntaxError) {
