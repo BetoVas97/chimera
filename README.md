@@ -15,7 +15,7 @@ Included in this release:
    * Lexical analysis
    * Syntax analysis
    * AST construction
-   * Semantic analysis
+   * Semantic analysis soon**
     
 To build, at the terminal type:
 
