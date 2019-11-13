@@ -6,7 +6,6 @@
 chimera.exe: Driver.cs Scanner.cs Token.cs TokenCategory.cs State.cs Parser.cs \
 	SyntaxError.cs
 	mcs -out:chimera.exe Driver.cs Scanner.cs Token.cs TokenCategory.cs State.cs \
-	Parser.cs SyntaxError.cs Node.cs SpecificNodes.cs
-			
+	Parser.cs SyntaxError.cs Node.cs SpecificNodes.cs SemanticAnalyzer.cs SemanticError.cs SymbolTable.cs Type.cs Kind.cs ProcedureTable.cs	
 clean:
 	rm chimera.exe
