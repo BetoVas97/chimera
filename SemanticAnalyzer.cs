@@ -36,6 +36,60 @@ namespace Chimera {
         public SemanticAnalyzer() {
             symbolTable = new SymbolTable();
             procedureTable = new ProcedureTable();
+            //predefined functions
+            procedureTable["WrInt"] = new ProcedureTable.Cell(Type.VOID, true);
+            procedureTable["WrInt"].symbolT["i"] = new SymbolTable.Cell(Type.INTEGER, Kind.PARAM, 0);
+
+            procedureTable["WrStr"] = new ProcedureTable.Cell(Type.VOID, true);
+            procedureTable["WrStr"].symbolT["s"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, 0);
+
+            procedureTable["WrBool"] = new ProcedureTable.Cell(Type.VOID, true);
+            procedureTable["WrBool"].symbolT["b"] = new SymbolTable.Cell(Type.BOOLEAN, Kind.PARAM, 0);
+
+            procedureTable["WrLn"] = new ProcedureTable.Cell(Type.VOID, true);
+
+            procedureTable["RdInt"] = new ProcedureTable.Cell(Type.INTEGER, true);
+            procedureTable["RdStr"] = new ProcedureTable.Cell(Type.STRING, true);
+
+            procedureTable["AtStr"] = new ProcedureTable.Cell(Type.STRING, true);
+            procedureTable["AtStr"].symbolT["s"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
+            procedureTable["AtStr"].symbolT["i"] = new SymbolTable.Cell(Type.INTEGER, Kind.PARAM, pos: 1);
+
+            procedureTable["LenStr"] = new ProcedureTable.Cell(Type.INTEGER, true);
+            procedureTable["LenStr"].symbolT["s"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
+
+            procedureTable["CmpStr"] = new ProcedureTable.Cell(Type.INTEGER, true);
+            procedureTable["CmpStr"].symbolT["s1"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
+            procedureTable["CmpStr"].symbolT["s2"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 1);
+
+            procedureTable["CatStr"] = new ProcedureTable.Cell(Type.STRING, true);
+            procedureTable["CatStr"].symbolT["s1"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
+            procedureTable["CatStr"].symbolT["s2"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 1);
+
+            procedureTable["LenLstInt"] = new ProcedureTable.Cell(Type.INTEGER, true);
+            procedureTable["LenLstInt"].symbolT["loi"] = new SymbolTable.Cell(Type.LIST_OF_INTEGER, Kind.PARAM, pos: 0);
+
+            procedureTable["LenLstStr"] = new ProcedureTable.Cell(Type.INTEGER, true);
+            procedureTable["LenLstStr"].symbolT["los"] = new SymbolTable.Cell(Type.LIST_OF_STRING, Kind.PARAM, pos: 0);
+
+            procedureTable["LenLstBool"] = new ProcedureTable.Cell(Type.INTEGER, true);
+            procedureTable["LenLstBool"].symbolT["lob"] = new SymbolTable.Cell(Type.LIST_OF_BOOLEAN, Kind.PARAM, pos: 0);
+
+            procedureTable["NewLstInt"] = new ProcedureTable.Cell(Type.LIST_OF_INTEGER, true);
+            procedureTable["NewLstInt"].symbolT["size"] = new SymbolTable.Cell(Type.INTEGER, Kind.PARAM, pos: 0);
+
+            procedureTable["NewLstStr"] = new ProcedureTable.Cell(Type.LIST_OF_STRING, true);
+            procedureTable["NewLstStr"].symbolT["size"] = new SymbolTable.Cell(Type.INTEGER, Kind.PARAM, pos: 0);
+
+            procedureTable["NewLstBool"] = new ProcedureTable.Cell(Type.LIST_OF_BOOLEAN, true);
+            procedureTable["NewLstBool"].symbolT["size"] = new SymbolTable.Cell(Type.INTEGER, Kind.PARAM, pos: 0);
+
+            procedureTable["IntToStr"] = new ProcedureTable.Cell(Type.STRING, true);
+            procedureTable["IntToStr"].symbolT["i"] = new SymbolTable.Cell(Type.INTEGER, Kind.PARAM, pos: 0);
+
+            procedureTable["StrToInt"] = new ProcedureTable.Cell(Type.INTEGER, true);
+            procedureTable["StrToInt"].symbolT["s"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
+
         }
 
         //-----------------------------------------------------------

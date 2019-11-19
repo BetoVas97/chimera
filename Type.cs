@@ -10,7 +10,11 @@ namespace Chimera{
         BOOLEAN,
         INTEGER,
         STRING,
-        LIST
+        VOID,
+        LIST,
+        LIST_OF_INTEGER,
+        LIST_OF_STRING,
+        LIST_OF_BOOLEAN
 
     }
 

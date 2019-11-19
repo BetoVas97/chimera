@@ -29,7 +29,7 @@ namespace Chimera
             }
             public Type type { get; private set; }
             public bool isPredefined { get; private set }
-            public SymbolTable symbolTable { get; private set}
+            public SymbolTable symbolT { get; private set}
 
             //Returned it
             public override string ToString()
