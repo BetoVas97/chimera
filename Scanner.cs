@@ -32,7 +32,6 @@ namespace Chimera
               | (?<LessMore>            [<][>]                  )
               | (?<MoreEqual>           [>][=]                  )              
               | (?<Newline>             \n                      )
-              | (?<BooleanLiteral>          (true|false)              )
               | (?<BraceOpen>           [{]                     )
               | (?<BraceClose>          [}]                     )
               | (?<BracketOpen>         [[]                     )
