@@ -12,7 +12,6 @@ namespace Chimera {
         ASSIGN, // =
         BEGIN, //KEY
         BOOL, //KEY
-        BOOLEAN_LITERAL,
         BRACE_OPEN, //{
         BRACE_CLOSE, //}
         BRACKET_OPEN, //[
