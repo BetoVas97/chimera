@@ -93,14 +93,24 @@ namespace Chimera {
         }
 
         //-----------------------------------------------------------
-        public Type Visit(Program node) {
-            Visit((dynamic) node[0]);
-            Visit((dynamic) node[1]);
+        public Type Visit(Program node)
+        {
+            Visit((dynamic)node[0]);
+            Visit((dynamic)node[1]);
+            Visit((dynamic)node[2]);
+            Visit((dynamic)node[3]);
             return Type.VOID;
         }
 
         //-----------------------------------------------------------
         public Type Visit(DeclarationList node) {
+            VisitChildren(node);
+            return Type.VOID;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(ConstantDeclarationList node)
+        {
             VisitChildren(node);
             return Type.VOID;
         }
@@ -120,6 +130,20 @@ namespace Chimera {
                     typeMapper[node.AnchorToken.Category];              
             }
 
+            return Type.VOID;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(VariableDeclarationList node)
+        {
+            VisitChildren(node);
+            return Type.VOID;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(ProcedureDeclarationList node)
+        {
+            VisitChildren(node);
             return Type.VOID;
         }
 
@@ -155,6 +179,21 @@ namespace Chimera {
         }
 
         //-----------------------------------------------------------
+        public Type Visit(AssignmentCallStatement node)
+        {
+            Visit((dynamic)node[0]);
+            Visit((dynamic)node[1]);
+            return Type.VOID;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(ExpressionList node)
+        {
+            VisitChildren(node);
+            return Type.VOID;
+        }
+
+        //-----------------------------------------------------------
         public Type Visit(Print node) {
             node.ExpressionType = Visit((dynamic) node[0]);
             return Type.VOID;
@@ -170,14 +209,15 @@ namespace Chimera {
             }
             VisitChildren(node[1]);
             return Type.VOID;
-        }
+        }  
 
         //-----------------------------------------------------------
         public Type Visit(Identifier node) {
 
+            //nombre
             var variableName = node.AnchorToken.Lexeme;
 
-            if (Table.Contains(variableName)) {
+            if symbolTable.Contains(variableName)) {
                 return Table[variableName];
             }
 
@@ -224,26 +264,100 @@ namespace Chimera {
         }
 
         //-----------------------------------------------------------
-        public Type Visit(And node) {
-            VisitBinaryOperator('&', node, Type.BOOL);
+        public Type Visit(And node)
+        {
+            VisitBinaryOperator("and", node, Type.BOOL);
             return Type.BOOL;
         }
 
         //-----------------------------------------------------------
-        public Type Visit(Less node) {
-            VisitBinaryOperator('<', node, Type.INT);
+        public Type Visit(Or node)
+        {
+            VisitBinaryOperator("or", node, Type.BOOL);
             return Type.BOOL;
         }
 
         //-----------------------------------------------------------
-        public Type Visit(Plus node) {
-            VisitBinaryOperator('+', node, Type.INT);
+        public Type Visit(Xor node)
+        {
+            VisitBinaryOperator("xor", node, Type.BOOL);
+            return Type.BOOL;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(AssignOperator node)
+        {
+            if (Visit((dynamic)node[0]) == Type.INT)
+            {
+                VisitBinaryOperator("=", node, Type.INT);
+            }
+            else
+            {
+                VisitBinaryOperator("=", node, Type.BOOL);
+            }
+
+            return Type.BOOL;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(LessMoreOperator node)
+        {
+            if (Visit((dynamic)node[0]) == Type.INT)
+            {
+                VisitBinaryOperator("<>", node, Type.INT);
+            }
+            else
+            {
+                VisitBinaryOperator("<>", node, Type.BOOL);
+            }
+
+            return Type.BOOL;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(LessOperator node)
+        {
+            VisitBinaryOperator("<", node, Type.INT);
+            return Type.BOOL;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(LessEqualOperator node)
+        {
+            VisitBinaryOperator("<=", node, Type.INT)
+            return Type.BOOL;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(MoreOperator node)
+        {
+            VisitBinaryOperator(">", node, Type.INT);
+            return Type.BOOL;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(MoreEqualOperator node)
+        {
+            VisitBinaryOperator(">=", node, Type.INT)
+            return Type.BOOL;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(AdditionOperator node) {
+            VisitBinaryOperator("+", node, Type.INT);
             return Type.INT;
         }
 
         //-----------------------------------------------------------
-        public Type Visit(Mul node) {
-            VisitBinaryOperator('*', node, Type.INT);
+        public Type Visit(SubstractionOperator node)
+        {
+            VisitBinaryOperator("-", node, Type.INT);
+            return Type.INT;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(MultiplicantOperator node) {
+            VisitBinaryOperator("*", node, Type.INT);
             return Type.INT;
         }
 
@@ -255,7 +369,7 @@ namespace Chimera {
         }
 
         //-----------------------------------------------------------
-        void VisitBinaryOperator(char op, Node node, Type type) {
+        void VisitBinaryOperator(string op, Node node, Type type) {
             if (Visit((dynamic) node[0]) != type || 
                 Visit((dynamic) node[1]) != type) {
                 throw new SemanticError(
