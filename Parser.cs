@@ -191,12 +191,14 @@ namespace Chimera
             {
                 AnchorToken = Expect(TokenCategory.VAR)
             };
+            var varFinal = new VariableDeclarationList();
             do
             {
                 var ide = new Identifier()
                 {
                     AnchorToken = Expect(TokenCategory.IDENTIFIER)
                 };
+                varD.Add(ide);
 
                 while (CurrentToken == TokenCategory.COMA)
                 {
@@ -206,21 +208,19 @@ namespace Chimera
                     {
                         AnchorToken = Expect(TokenCategory.IDENTIFIER)
                     };
-                    varD.Add(ide);
                     varD.Add(ide2);
                 }
                 Expect(TokenCategory.COLON);
 
-                var varFinal = new VariableDeclarationList();
+                
                 varFinal.Add(Type());
-                varD.Add(varFinal);
+                varFinal.Add(varD);
+
                 Expect(TokenCategory.SEMICOLON);
 
             } while (CurrentToken == TokenCategory.IDENTIFIER);
 
-
-
-            return varD;
+            return varFinal;
         }
 
         public Node ConstDeclaration()
@@ -229,7 +229,7 @@ namespace Chimera
             {
                 AnchorToken = Expect(TokenCategory.CONST)
             };
-            Expect(TokenCategory.IDENTIFIER);
+            result.Add(Expect(TokenCategory.IDENTIFIER));
             Expect(TokenCategory.COLON_EQUAL);
             result.Add(Literal());
             Expect(TokenCategory.SEMICOLON);
@@ -279,7 +279,9 @@ namespace Chimera
             if (CurrentToken == TokenCategory.COLON)
             {
                 Expect(TokenCategory.COLON);
-               type.Add(Type());
+                type = Type();
+            } else{
+                type.AnchorToken = null;
             }
             Expect(TokenCategory.SEMICOLON);
             if (CurrentToken == TokenCategory.CONST)
@@ -311,7 +313,7 @@ namespace Chimera
             return temp;
         }
 
-        public Node Literal()
+        public Node Literal() //no se si va en el semantic
         {
             if (CurrentToken == TokenCategory.BRACE_OPEN)
                 return List();

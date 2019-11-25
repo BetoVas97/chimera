@@ -11,6 +11,19 @@ namespace Chimera {
 
     class SemanticAnalyzer {
 
+        static readonly IDictionary<TokenCategory, Type> categoryToType =
+            new Dictionary<TokenCategory, Type>() {
+                { TokenCategory.TRUE, Type.BOOLEAN },
+                { TokenCategory.FALSE, Type.BOOLEAN },
+                { TokenCategory.BOOL, Type.BOOLEAN },
+                
+                { TokenCategory.INT_LITERAL, Type.INTEGER},
+                { TokenCategory.INTEGER, Type.INTEGER},
+
+                { TokenCategory.STRING, Type.STRING },
+                { TokenCategory.STRING_LITERAL, Type.STRING },
+            };
+
         //-----------------------------------------------------------
         static readonly IDictionary<TokenCategory, Type> typeMapper =
             new Dictionary<TokenCategory, Type>() {
@@ -36,6 +49,8 @@ namespace Chimera {
         public SemanticAnalyzer() {
             symbolTable = new SymbolTable();
             procedureTable = new ProcedureTable();
+            bool inProcedure = false;
+            string procName = "";
             //predefined functions
             procedureTable["WrInt"] = new ProcedureTable.Cell(Type.VOID, true);
             procedureTable["WrInt"].symbolT["i"] = new SymbolTable.Cell(Type.INTEGER, Kind.PARAM, 0);
@@ -115,6 +130,8 @@ namespace Chimera {
             return Type.VOID;
         }
 
+
+
         //-----------------------------------------------------------
         public Type Visit(Declaration node) {
 
@@ -150,6 +167,195 @@ namespace Chimera {
         //-----------------------------------------------------------
         public Type Visit(StatementList node) {
             VisitChildren(node);
+            return Type.VOID;
+        }
+
+        //TRABAJO TOMMY 24/11/2019
+        //-----------------------------------------------------------
+        public Type Visit(ParameterDeclaration node)
+        {   
+            var typeOfParamenters = categoryToType[node[1].AnchorToken.Category];
+            if (node[1] is SimpleType){ //lista
+                switch (node[1].AnchorToken.Category) {
+                    case (TokenCategory.INTEGER || TokenCategory.INT_LITERAL):
+                        typeOfParamenters = Type.LIST_OF_INTEGER;
+                    case (TokenCategory.BOOL || TokenCategory.TRUE || TokenCategory.FALSE):
+                        typeOfParamenters = Type.LIST_OF_BOOLEAN;
+                    case (TokenCategory.STRING || TokenCategory.STRING_LITERAL):
+                        typeOfParamenters = Type.LIST_OF_STRING;
+                }
+            }
+
+            procedureTable[procName].symbolT[node.AnchorToken.Lexeme] = new SymbolTable.Cell(typeOfParamenters, DateTimeKind.PARAM, pos: 0);
+
+            IEnumerator<Node> listOfIdentifiers = node[0].GetEnumerator();
+            var counter = 1;
+            foreach(Node identifier in listOfIdentifiers) {
+                if(procedureTable[procName].symbolT.Contains(identifier.AnchorToken.Lexeme)){
+                    throw new SemanticError(
+                        "Duplicated parameter declaration " + identifier.AnchorToken.Lexeme 
+                        + " in method " + procName,
+                        identifier.AnchorToken);
+                }
+                procedureTable[procName].symbolT[identifier.AnchorToken.Lexeme] = new SymbolTable.Cell(typeOfParamenters, Kind.PARAM, pos: counter);
+                counter ++;
+            }
+            
+            return Type.VOID;
+        }
+
+        
+        //-----------------------------------------------------------
+        public Type Visit(ProcedureDeclaration node) {
+
+            IEnumerator<Node> children = node.GetEnumerator();
+            int count = 0;
+
+            
+            foreach (Node item in children)
+            {
+                if(count != 0){
+                    Visit((dynamic) item);
+                }else{
+                    if(procedureTable.Contains(item.AnchorToken.Lexeme)){
+                        throw new SemanticError(
+                        "Duplicated procedure declaration " + node.AnchorToken.Lexeme,
+                        node.AnchorToken);
+                    }
+                    if(node[2].AnchorToken == null){
+                        procedureTable[item.AnchorToken.Lexeme] = new ProcedureTable.Cell(Type.VOID, true);
+                    } else {
+                        var typeOfProc = categoryToType[item.AnchorToken.Category];
+                        if (item is SimpleType){ //lista
+                            switch (item.AnchorToken.Category) {
+                                case (TokenCategory.INTEGER || TokenCategory.INT_LITERAL):
+                                    typeOfParamenters = Type.LIST_OF_INTEGER;
+                                case (TokenCategory.BOOL || TokenCategory.TRUE || TokenCategory.FALSE):
+                                    typeOfParamenters = Type.LIST_OF_BOOLEAN;
+                                case (TokenCategory.STRING || TokenCategory.STRING_LITERAL):
+                                    typeOfParamenters = Type.LIST_OF_STRING;
+                            }
+                        }
+                        procedureTable[item.AnchorToken.Lexeme] = new ProcedureTable.Cell(typeOfProc, false);
+                    }
+                    procName = item.AnchorToken.Lexeme;
+                    inProcedure = true;
+                    
+                }
+                count++;
+            }
+            procName = "";
+            inProcedure = false;
+            return Type.VOID;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(ConstDeclaration node)
+        {
+            if(inProcedure){
+                if(procedureTable[procName].symbolT.Contains(node[0].AnchorToken.Lexeme)){
+                    throw new SemanticError(
+                        "Duplicated const or variable declaration " + node[0].AnchorToken.Lexeme 
+                        + " in method " + procName,
+                        node[0].AnchorToken);
+                }
+                procedureTable[procName].symbolT[node[0].AnchorToken.Lexeme] = new SymbolTable.Cell(Visit((dynamic) node[1]), Kind.CONST, pos: 0);
+            } else {
+                if(symbolTable.Contains(node[0].AnchorToken.Lexeme)) {
+                    throw new SemanticError(
+                        "Duplicated const or variable declaration " + node[0].AnchorToken.Lexeme,
+                        node[0].AnchorToken);
+                }
+                symbolTable[node[0].AnchorToken.Lexeme] = new SymbolTable.Cell(Visit((dynamic) node[1]), Kind.CONST, pos: 0);
+            }
+            return Type.VOID;
+        }
+        
+        //-----------------------------------------------------------
+        public Type Visit(List node) {
+            Type listType = Visit((dynamic) node[0]);
+            IEnumerator<Node> types = node.GetEnumerator();
+            foreach (Node type in types) {
+                Type nodeType = Visit((dynamic) type);
+                if(nodeType != listType) {
+                    throw new SemanticError("Invalid type: " + nodeType, type.AnchorToken);
+                }
+            }
+
+            switch (listType) {
+                    case (TokenCategory.INT_LITERAL):
+                        return Type.LIST_OF_INTEGER;
+                    case (TokenCategory.TRUE || TokenCategory.FALSE):
+                        return Type.LIST_OF_BOOLEAN;
+                    case (TokenCategory.STRING_LITERAL):
+                        return Type.LIST_OF_STRING;
+                }
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(SimpleLiteral node) {
+            return categoryToType[node.AnchorToken.Category];
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(Type node) {
+            Type nodeType = categoryToType[node.AnchorToken.Category];
+            if(node is SimpleType){ //list
+                switch (node.AnchorToken.Category) {
+                    case (TokenCategory.INTEGER || TokenCategory.INT_LITERAL):
+                        nodeType = Type.LIST_OF_INTEGER;
+                    case (TokenCategory.BOOL || TokenCategory.TRUE || TokenCategory.FALSE):
+                        nodeType = Type.LIST_OF_BOOLEAN;
+                    case (TokenCategory.STRING || TokenCategory.STRING_LITERAL):
+                        nodeType = Type.LIST_OF_STRING;
+                }
+            }
+            return nodeType;
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(ListType node) {
+            switch (node.AnchorToken.Category) {
+                case (TokenCategory.INTEGER || TokenCategory.INT_LITERAL):
+                    return Type.LIST_OF_INTEGER;
+                case (TokenCategory.BOOL || TokenCategory.TRUE || TokenCategory.FALSE):
+                    return Type.LIST_OF_BOOLEAN;
+                case (TokenCategory.STRING || TokenCategory.STRING_LITERAL):
+                    return Type.LIST_OF_STRING;
+            }
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(SimpleType node) {
+            return categoryToType[node.Category];
+        }
+
+        //-----------------------------------------------------------
+        public Type Visit(VariableDeclaration node) {
+            Type typeOfVariables = Visit((dynamic) node[0]);
+
+            IEnumerator<Node> variablesNames = node[1].GetEnumerator();
+            int count = 0;
+            foreach(Node variable in variablesNames){
+                if(inProcedure){
+                    if(procedureTable[procName].symbolT.Contains(variable.AnchorToken.Lexeme)){
+                        throw new SemanticError(
+                            "Duplicated variable declaration " + variable.AnchorToken.Lexeme 
+                            + " in method " + procName,
+                            variable.AnchorToken);
+                    }
+                    procedureTable[procName].symbolT[variable.AnchorToken.Lexeme] = new SymbolTable.Cell(typeOfVariables, Kind.VAR, pos: count);
+                } else {
+                    if(symbolTable.Contains(variable.AnchorToken.Lexeme)) {
+                        throw new SemanticError(
+                            "Duplicated const or variable declaration " + variable.AnchorToken.Lexeme,
+                            variable.AnchorToken);
+                    }
+                    symbolTable[variable.AnchorToken.Lexeme] = new SymbolTable.Cell(typeOfVariables, Kind.VAR, pos: count);
+                }
+                count++;
+            }
+
             return Type.VOID;
         }
 
@@ -217,7 +423,7 @@ namespace Chimera {
             //nombre
             var variableName = node.AnchorToken.Lexeme;
 
-            if symbolTable.Contains(variableName)) {
+            if (symbolTable.Contains(variableName)) {
                 return Table[variableName];
             }
 
@@ -324,7 +530,7 @@ namespace Chimera {
         //-----------------------------------------------------------
         public Type Visit(LessEqualOperator node)
         {
-            VisitBinaryOperator("<=", node, Type.INT)
+            VisitBinaryOperator("<=", node, Type.INT);
             return Type.BOOL;
         }
 
@@ -338,7 +544,7 @@ namespace Chimera {
         //-----------------------------------------------------------
         public Type Visit(MoreEqualOperator node)
         {
-            VisitBinaryOperator(">=", node, Type.INT)
+            VisitBinaryOperator(">=", node, Type.INT);
             return Type.BOOL;
         }
 
