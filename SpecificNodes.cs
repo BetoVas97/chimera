@@ -17,6 +17,8 @@ namespace Chimera {
     class SimpleLiteralList:Node {}
     class IdentifierList : Node { }
     class Declaration : Node { }
+    class VariableDeclaration : Node { }
+    class VariableNames : Node { }
     class ConstDeclaration : Node { }
     class ParameterDeclaration: Node { }
     class ProcedureDeclaration : Node { }
@@ -24,7 +26,7 @@ namespace Chimera {
     class SimpleType: Node { }
     class Call : Node {}
     class Expression: Node { }
-    class AssignmentCallStatement:Node { }
+    class AssignmentStatement: Node {}
     class CallStatement: Node { }
     class Assignment : Node { }
     class If : Node {}
@@ -49,6 +51,7 @@ namespace Chimera {
     class DivOperator: Node { }
     class RemOperator: Node { }
     class NotOperator: Node { }
+    class NegationOperator: Node { }
     class MoreOperator: Node { }
     class LessOperator: Node { }
     class LessEqualOperator: Node {}

@@ -187,40 +187,41 @@ namespace Chimera
 
         public Node VariableDeclaration()
         {
-            var varD = new VariableDeclarationList()
+            var varFinal = new VariableDeclaration()
             {
                 AnchorToken = Expect(TokenCategory.VAR)
             };
-            do
-            {
+            do{
+
+            
+                var varNames = new VariableNames();
+            
                 var ide = new Identifier()
                 {
                     AnchorToken = Expect(TokenCategory.IDENTIFIER)
                 };
+                varNames.Add(ide);
 
                 while (CurrentToken == TokenCategory.COMA)
                 {
                     Expect(TokenCategory.COMA);
-                    
+                
                     var ide2 = new Identifier()
                     {
                         AnchorToken = Expect(TokenCategory.IDENTIFIER)
                     };
-                    varD.Add(ide);
-                    varD.Add(ide2);
+                    varNames.Add(ide2);
                 }
                 Expect(TokenCategory.COLON);
-
-                var varFinal = new VariableDeclarationList();
+                
                 varFinal.Add(Type());
-                varD.Add(varFinal);
+                varFinal.Add(varNames);
+
                 Expect(TokenCategory.SEMICOLON);
+                
+            } while(CurrentToken == TokenCategory.IDENTIFIER);
 
-            } while (CurrentToken == TokenCategory.IDENTIFIER);
-
-
-
-            return varD;
+            return varFinal;
         }
 
         public Node ConstDeclaration()
@@ -229,12 +230,16 @@ namespace Chimera
             {
                 AnchorToken = Expect(TokenCategory.CONST)
             };
-            Expect(TokenCategory.IDENTIFIER);
+            result.Add(new Identifier()
+                {
+                    AnchorToken = Expect(TokenCategory.IDENTIFIER)
+                });
             Expect(TokenCategory.COLON_EQUAL);
             result.Add(Literal());
             Expect(TokenCategory.SEMICOLON);
             return result;
         }
+
 
 
         public Node ParameterDeclaration()
@@ -265,7 +270,7 @@ namespace Chimera
 
             };
             var parameterList = new ParamaterDeclarationList();
-            var type = new Type();
+            var type = new Node();
             var constantList = new ConstantDeclarationList();
             var varList = new VariableDeclarationList();
             var statementList = new StatementList();
@@ -279,7 +284,10 @@ namespace Chimera
             if (CurrentToken == TokenCategory.COLON)
             {
                 Expect(TokenCategory.COLON);
-               type.Add(Type());
+                type = Type();
+            } else{
+                type = new Type();
+                type.AnchorToken = null;
             }
             Expect(TokenCategory.SEMICOLON);
             if (CurrentToken == TokenCategory.CONST)
@@ -423,7 +431,25 @@ namespace Chimera
             switch (CurrentToken)
             {
                 case TokenCategory.IDENTIFIER:
-                    return AssignmentCallStatement();
+                    var identifier = Expect(TokenCategory.IDENTIFIER);
+                    if(CurrentToken==TokenCategory.PARENTHESIS_OPEN){
+                        var result = CallStatement();
+                        result.AnchorToken = identifier;
+                        return result;
+                    }else{
+                        //if(CurrentToken == TokenCategory.BRACKET_OPEN || CurrentToken == TokenCategory.COLON_EQUAL)
+                        //{
+                        var result = AssignmentStatement();
+                        result.AnchorToken = identifier;
+                        return result;
+                        //}
+
+                        /*else{
+                            var result = ListIndexAssignment();
+                            result.AnchorToken = identifier;
+                            return result;
+                        }*/
+                    }
                 case TokenCategory.IF:
                     return If();
                 case TokenCategory.LOOP:
@@ -440,91 +466,60 @@ namespace Chimera
             }
         }
 
-        public Node AssignmentCallStatement()
+
+        public Node CallStatement()
         {
-            var ident = Expect(TokenCategory.IDENTIFIER);
-            var expList = new ExpressionList();
-            var exp = new Expression();          
-            if (CurrentToken == TokenCategory.PARENTHESIS_OPEN)
+            var result=new CallStatement(){
+                AnchorToken = Expect(TokenCategory.PARENTHESIS_OPEN)
+            };   
+            if (CurrentToken != TokenCategory.PARENTHESIS_CLOSE)
             {
-                Expect(TokenCategory.PARENTHESIS_OPEN);
-                if (firstOfSimpleExpression.Contains(CurrentToken))
+                result.Add(Expression());
+                while (CurrentToken == TokenCategory.COMA)
                 {
-                    exp.Add(Expression());
-                    while (CurrentToken == TokenCategory.COMA)
-                    {
-                        Expect(TokenCategory.COMA);
-                        expList.Add(Expression());
-                    }
+                    Expect(TokenCategory.COMA);
+                    result.Add(Expression());
                 }
-                Expect(TokenCategory.PARENTHESIS_CLOSE);
-                Expect(TokenCategory.SEMICOLON);
             }
-            else if (CurrentToken == TokenCategory.BRACKET_OPEN || CurrentToken == TokenCategory.COLON_EQUAL)
-            {
-                if (CurrentToken == TokenCategory.BRACKET_OPEN)
-                {
-                    Expect(TokenCategory.BRACKET_OPEN);
-                    exp.Add(Expression());
-                    Expect(TokenCategory.BRACKET_CLOSE);
-                }
-                Expect(TokenCategory.COLON_EQUAL);
-                expList.Add(Expression());
-                Expect(TokenCategory.SEMICOLON);
-            }
-            var result = new AssignmentCallStatement() { exp, expList };
-            result.AnchorToken = ident;
+            Expect(TokenCategory.PARENTHESIS_CLOSE);
+            Expect(TokenCategory.SEMICOLON);
             return result;
         }
-//ExpressionLst not need just expression.
-        // public Node AssignmentStatement()
-        // {
-        //     var ident = Expect(TokenCategory.IDENTIFIER);
-        //     var expList = new ExpressionList();
-        //     var exp = new Expression();          
-        //     if (CurrentToken == TokenCategory.BRACKET_OPEN || CurrentToken == TokenCategory.COLON_EQUAL)
-        //     {
-        //         if (CurrentToken == TokenCategory.BRACKET_OPEN)
-        //         {
-        //             Expect(TokenCategory.BRACKET_OPEN);
-        //             exp.Add(Expression());
-        //             Expect(TokenCategory.BRACKET_CLOSE);
-        //         }
-        //         Expect(TokenCategory.COLON_EQUAL);
-        //         expList.Add(Expression());
-        //         Expect(TokenCategory.SEMICOLON);
-        //     }
-        //     var result = new AssignmentStatement() { exp, expList };
-        //     result.AnchorToken = ident;
-        //     return result;
-        // }
 
-        // public Node CallStatement()
-        // {
-        //     var ident = Expect(TokenCategory.IDENTIFIER);
-        //     var expList = new ExpressionList();
-        //     var exp = new Expression();          
-        //     if (CurrentToken == TokenCategory.PARENTHESIS_OPEN)
-        //     {
-        //         Expect(TokenCategory.PARENTHESIS_OPEN);
-        //         if (firstOfSimpleExpression.Contains(CurrentToken))
-        //         {
-        //             exp.Add(Expression());
-        //             while (CurrentToken == TokenCategory.COMA)
-        //             {
-        //                 Expect(TokenCategory.COMA);
-        //                 expList.Add(Expression());
-        //             }
-        //         }
-        //         Expect(TokenCategory.PARENTHESIS_CLOSE);
-        //         Expect(TokenCategory.SEMICOLON);
-        //     }
-            
-        //     var result = new CallStatement() { exp, expList };
-        //     result.AnchorToken = ident;
-        //     return result;
-        // }
+        public Node AssignmentStatement()
+        {
+            var result=new AssignmentStatement();
+       
+            if (CurrentToken == TokenCategory.BRACKET_OPEN)
+            {
+                Expect(TokenCategory.BRACKET_OPEN);
+                result.Add(Expression());
+                Expect(TokenCategory.BRACKET_CLOSE);                
+            }
+            Expect(TokenCategory.COLON_EQUAL);
+            result.Add(Expression());
+            Expect(TokenCategory.SEMICOLON);
 
+            return result;
+        }
+        
+        public Node Call()
+        {
+            var result = new Call(){
+                AnchorToken=Expect(TokenCategory.PARENTHESIS_OPEN)
+            };
+            if (CurrentToken != TokenCategory.PARENTHESIS_CLOSE){
+                result.Add(Expression());
+
+                while (CurrentToken == TokenCategory.COMA){
+                    Expect(TokenCategory.COMA);
+                    result.Add(Expression());
+                }
+            }
+
+            Expect(TokenCategory.PARENTHESIS_CLOSE);            
+            return result;
+        }
         public Node List()
         {
             var simpleList = new SimpleLiteralList();
@@ -546,56 +541,18 @@ namespace Chimera
             return temp;
         }
 
-        public Node Call()
-        {
-            var result = new CallStatement();
-            Expect(TokenCategory.SEMICOLON);
-            return result;
-        }
-
-        public Node CallStatement()
-        {           
-            Expect(TokenCategory.PARENTHESIS_OPEN);
-            var result = new Call();
-            if (CurrentToken != TokenCategory.PARENTHESIS_CLOSE)
-            {
-                result.Add(Expression());
-                while (CurrentToken == TokenCategory.COMA)
-                {
-                    Expect(TokenCategory.COMA);
-                    result.Add(Expression());
-                }
-            }
-            Expect(TokenCategory.PARENTHESIS_CLOSE);
-            return result;
-        }
-
-        // //Not requiered
-        // public Node AssignmentStatement()
-        // {
-        //     var result = new Assignment();
-        //     if (CurrentToken == TokenCategory.BRACKET_OPEN)
-        //     {
-        //         Expect(TokenCategory.BRACKET_OPEN);
-        //         result.Add(Expression());
-        //         Expect(TokenCategory.BRACKET_CLOSE);
-        //     }
-        //     Expect(TokenCategory.COLON_EQUAL);
-        //     result.Add(Expression());
-        //     Expect(TokenCategory.SEMICOLON);
-        //     return result;
-        // }
-
         public Node If()
         {
             var tkIF = Expect(TokenCategory.IF);           
             var exprList = new ExpressionList();
-            var statementList = new StatementList();
+            var statementListIf = new StatementList();
+            var statementListElseIf = new StatementList();
+            var statementListElse = new StatementList();
             exprList.Add(Expression());
             Expect(TokenCategory.THEN);
             while (firstOfStatement.Contains(CurrentToken))
             {
-                statementList.Add(Statement());
+                statementListIf.Add(Statement());
             }
             while (CurrentToken == TokenCategory.ELSEIF)
             {
@@ -604,7 +561,7 @@ namespace Chimera
                 Expect(TokenCategory.THEN);
                 while (firstOfStatement.Contains(CurrentToken))
                 {
-                    statementList.Add(Statement());
+                    statementListElseIf.Add(Statement());
                 }
             }
             if (CurrentToken == TokenCategory.ELSE)
@@ -612,15 +569,16 @@ namespace Chimera
                 Expect(TokenCategory.ELSE);
                 while (firstOfStatement.Contains(CurrentToken))
                 {
-                    statementList.Add(Statement());
+                    statementListElse.Add(Statement());
                 }
             }
             Expect(TokenCategory.END);
             Expect(TokenCategory.SEMICOLON);
-            var result=new If () {exprList,statementList};
+            var result=new If () {statementListIf,statementListElseIf,statementListElse,exprList};
             result.AnchorToken = tkIF;
             return result;
         }
+
 
         public Node Loop()
         {
@@ -668,8 +626,11 @@ namespace Chimera
             {
                 AnchorToken = Expect(TokenCategory.RETURN)
             };
+            
+            if(CurrentToken != TokenCategory.SEMICOLON){
+               result.Add(Expression()); 
+            }
 
-            result.Add(Expression());
             Expect(TokenCategory.SEMICOLON);
             return result;
         }
@@ -872,6 +833,13 @@ namespace Chimera
                     var result = Expression();
                     Expect(TokenCategory.PARENTHESIS_CLOSE);
 
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
+                    {
+                        Expect(TokenCategory.BRACKET_OPEN);
+                        result.Add(Expression());
+                        Expect(TokenCategory.BRACKET_CLOSE);
+                    }
+
                     return result;
 
                 case TokenCategory.IDENTIFIER:
@@ -882,7 +850,7 @@ namespace Chimera
                     if (CurrentToken == TokenCategory.PARENTHESIS_OPEN)
                     {
 
-                        resultID.Add(CallStatement());
+                        resultID.Add(Call());
                     }
                     if (CurrentToken == TokenCategory.BRACKET_OPEN)
                     {
@@ -893,17 +861,50 @@ namespace Chimera
                     return resultID;
 
                 case TokenCategory.INT_LITERAL:
-                    return SimpleLiteral();
+                    var resultI = SimpleLiteral();
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
+                    {
+                        Expect(TokenCategory.BRACKET_OPEN);
+                        resultI.Add(Expression());
+                        Expect(TokenCategory.BRACKET_CLOSE);
+                    }
+                    return resultI;
                 case TokenCategory.STRING_LITERAL:
-                    return SimpleLiteral();
+                    var resultS = SimpleLiteral();
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
+                    {
+                        Expect(TokenCategory.BRACKET_OPEN);
+                        resultS.Add(Expression());
+                        Expect(TokenCategory.BRACKET_CLOSE);
+                    }
+                    return resultS;
                 case TokenCategory.TRUE:
-                    return SimpleLiteral();
-                   //return TrueLiteral();
+                    var resultT = SimpleLiteral();
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
+                    {
+                        Expect(TokenCategory.BRACKET_OPEN);
+                        resultT.Add(Expression());
+                        Expect(TokenCategory.BRACKET_CLOSE);
+                    }
+                    return resultT;
                 case TokenCategory.FALSE:
-                    return SimpleLiteral();
-                    //return FalseLiteral();
+                    var resultF = SimpleLiteral();
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
+                    {
+                        Expect(TokenCategory.BRACKET_OPEN);
+                        resultF.Add(Expression());
+                        Expect(TokenCategory.BRACKET_CLOSE);
+                    }
+                    return resultF;
                 case TokenCategory.BRACE_OPEN:
-                    return Literal();
+                    var resultL = Literal();
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
+                    {
+                        Expect(TokenCategory.BRACKET_OPEN);
+                        resultL.Add(Expression());
+                        Expect(TokenCategory.BRACKET_CLOSE);
+                    }
+                    return resultL;
 
                 default:
                     throw new SyntaxError(firstOfSimpleExpression, tokenStream.Current);
