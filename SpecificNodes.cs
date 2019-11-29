@@ -5,57 +5,71 @@
   Jesus Heriberto Vasquez Sanchez A01377358
 */
 
-namespace Chimera {
-    class List : Node { }
-    class DeclarationList : Node { }
-    class ConstantDeclarationList : Node { }
-    class VariableDeclarationList : Node { }
-    class ParamaterDeclarationList : Node { }
-    class ProcedureDeclarationList : Node { }
-    class StatementList : Node { }
-    class ExpressionList: Node { }
-    class SimpleLiteralList:Node {}
-    class IdentifierList : Node { }
-    class Declaration : Node { }
-    class VariableDeclaration : Node { }
-    class VariableNames : Node { }
-    class ConstDeclaration : Node { }
-    class ParameterDeclaration: Node { }
-    class ProcedureDeclaration : Node { }
-    class Program : Node { }
-    class SimpleType: Node { }
-    class Call : Node {}
-    class Expression: Node { }
-    class AssignmentStatement: Node {}
-    class CallStatement: Node { }
-    class Assignment : Node { }
-    class If : Node {}
-    class Loop : Node { }
-    class For : Node { }
-    class Return: Node { }
-    class Exit : Node { }
-    class Identifier : Node { }
-    class And : Node { }
+namespace Chimera {    
+
+    class Program: Node {}
+
+    class DeclarationList: Node {}
+    class ConstDeclarationList: Node {}
+    class ConstDeclaration: Node {}
+    class ProcedureDeclarationList: Node {}
+
+    class Equality: Node {}
+    class Inequality: Node {}
+    class LessThan: Node {}
+    class GreaterThan: Node {}
+    class LessEqual: Node {}
+    class GreaterEqual: Node {}
+    class Sum: Node {}
+    class Minus: Node {}
+    class Negation: Node {}
+    class Div: Node {}
+    class Rem: Node {}
+    class Not: Node {}
+    class Mult: Node {}
+
+    class ElseIfList: Node {}
+    class ElseIf: Node {}
+    class Else: Node {}
+    class And: Node {}
     class Or: Node {}
     class Xor: Node {}
-    class Type : Node { }
-    class SimpleLiteral : Node { }
-    class IntegerLiteral: Node {}
-    class StringLiteral: Node {}
-    class BooleanLiteral: Node {}
-    class FalseLiteral: Node { }
-    class TrueLiteral: Node { }
-    class AdditionOperator: Node { }
-    class SubstractionOperator: Node { }
-    class MultiplicantOperator: Node { }
-    class DivOperator: Node { }
-    class RemOperator: Node { }
-    class NotOperator: Node { }
-    class NegationOperator: Node { }
-    class MoreOperator: Node { }
-    class LessOperator: Node { }
-    class LessEqualOperator: Node {}
-    class MoreEqualOperator: Node {}
-    class LessMoreOperator: Node { }
-    class AssignOperator: Node { }
+
+    class Tipo: Node {}
+
+    class ParameterDeclarationList: Node {}
+    class VarDeclarationList: Node {}
+    class VarDeclaration: Node {}
+    class VarDeclarationItems: Node {}
+    class ProcedureDeclaration: Node {}
+
+    class List: Node {}
+
+    class StatementList: Node {}
+    class Statement: Node {}
+    class If: Node {}
+    class Assignment: Node {}
+    class CallS: Node {}
+    class Loop: Node {}
+    class For: Node {}
+    class Return: Node {}
+    class Exit: Node {}
+
+    class AssignmentType: Node {}
+    class ListIndex: Node {}
+    class ListItem: Node {}
+    class ListIndexAssignment: Node {}
+    class SimpleAssignment: Node {}
+    class Identifier: Node {}
+    class Call: Node {}
+		
+    class ListN: Node {}
+    class IntegerN: Node {}
+    class StringN: Node {}
+    class BooleanN: Node {}
+
+    class Int_Literal: Node {}
+    class Str_Literal: Node {}
+    class False: Node {}
+    class True: Node {}
 }
