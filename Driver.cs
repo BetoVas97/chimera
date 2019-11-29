@@ -54,7 +54,7 @@ namespace Chimera {
                 Environment.Exit(1);
             }
 
-            string errorLine = "";
+            //string errorLine = "";
             try {            
                 var inputPath = args[0];                
                 var input = File.ReadAllText(inputPath);
@@ -70,7 +70,13 @@ namespace Chimera {
                 Console.WriteLine();
                 Console.WriteLine("Symbol Table");
                 Console.WriteLine("============");
-                foreach (var entry in semantic.Table)
+                foreach (var entry in semantic.symbolTable)
+                {
+                    Console.WriteLine(entry);
+                }
+                Console.WriteLine("Procedure Table");
+                Console.WriteLine("============");
+                foreach (var entry in semantic.procedureTable)
                 {
                     Console.WriteLine(entry);
                 }
@@ -85,8 +91,10 @@ namespace Chimera {
                 }*/
             } catch (Exception e) {
 
-                if (e is FileNotFoundException || e is SyntaxError) {
-                    Console.WriteLine(errorLine);
+                if (e is FileNotFoundException 
+                || e is SyntaxError
+                || e is SemanticError) {
+                    //Console.WriteLine(errorLine);
                     Console.Error.WriteLine(e.Message);
                     Environment.Exit(1);
                 }

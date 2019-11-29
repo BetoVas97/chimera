@@ -214,7 +214,7 @@ namespace Chimera
                 }
                 Expect(TokenCategory.COLON);
                 
-                varFinal.Add(Type());
+                varFinal.Add(TypeNode());
                 varFinal.Add(varNames);
 
                 Expect(TokenCategory.SEMICOLON);
@@ -255,7 +255,7 @@ namespace Chimera
 
             }
             Expect(TokenCategory.COLON);
-            var type = Type();
+            var type = TypeNode();
             Expect(TokenCategory.SEMICOLON);
             var temp = new ParameterDeclaration() { list, type };
             temp.AnchorToken = result;
@@ -269,7 +269,7 @@ namespace Chimera
                 AnchorToken = Expect(TokenCategory.IDENTIFIER)
 
             };
-            var parameterList = new ParamaterDeclarationList();
+            var parameterList = new ParameterDeclarationList();
             var type = new Node();
             var constantList = new ConstantDeclarationList();
             var varList = new VariableDeclarationList();
@@ -284,9 +284,9 @@ namespace Chimera
             if (CurrentToken == TokenCategory.COLON)
             {
                 Expect(TokenCategory.COLON);
-                type = Type();
+                type = TypeNode();
             } else{
-                type = new Type();
+                type = new TypeNode();
                 type.AnchorToken = null;
             }
             Expect(TokenCategory.SEMICOLON);
@@ -388,24 +388,24 @@ namespace Chimera
             }
         }
 
-        public Node Type()
+        public Node TypeNode()
         {
             switch (CurrentToken)
             {
                 case TokenCategory.LIST:
                     return ListType();
                 case TokenCategory.STRING:
-                    return new Type()
+                    return new TypeNode()
                     {
                         AnchorToken = SimpleType()
                     };
                 case TokenCategory.BOOL:
-                    return new Type()
+                    return new TypeNode()
                     {
                         AnchorToken = SimpleType()
                     };
                 case TokenCategory.INTEGER:
-                    return new Type()
+                    return new TypeNode()
                     {
                         AnchorToken = SimpleType()
                     };
@@ -523,11 +523,10 @@ namespace Chimera
         public Node List()
         {
             var simpleList = new SimpleLiteralList();
-            var simpleLit = new SimpleLiteral();
             var result = Expect(TokenCategory.BRACE_OPEN);
             if (firstOfSimpleLiteral.Contains(CurrentToken))
             {
-                simpleLit.Add(SimpleLiteral());
+                simpleList.Add(SimpleLiteral());
                 while (CurrentToken == TokenCategory.COMA)
                 {
                     Expect(TokenCategory.COMA);
@@ -536,7 +535,7 @@ namespace Chimera
                
             }
             Expect(TokenCategory.BRACE_CLOSE);
-            var temp = new List { simpleLit, simpleList };
+            var temp = new List {simpleList };
             temp.AnchorToken = result;
             return temp;
         }
@@ -613,8 +612,9 @@ namespace Chimera
             var statementList = new StatementList();
             while (firstOfStatement.Contains(CurrentToken))
             {
-                result.Add(Statement());
+                statementList.Add(Statement());
             }
+            result.Add(statementList);
             Expect(TokenCategory.END);
             Expect(TokenCategory.SEMICOLON);
             return result;
@@ -793,7 +793,7 @@ namespace Chimera
 
                 expr.Add(result);
 
-                return result;
+                return expr;
             }
 
             else 
@@ -813,7 +813,7 @@ namespace Chimera
                     };
 
                 case TokenCategory.MINUS:
-                    return new SubstractionOperator()
+                    return new NegationOperator()
                     {
                         AnchorToken = Expect(TokenCategory.MINUS)
                     };
@@ -824,87 +824,145 @@ namespace Chimera
             }
         }
 
+        public Type Visit (ListIndex node){
+            var index = Visit((dynamic)node [0]);
+            return index;
+        }
+        //this method has the structure for an expression with brackets List
+        public void AuxMethod(Node result){
+            var ListIndex=new ListIndex();
+            ListIndex.AnchorToken = Expect(TokenCategory.BRACKET_OPEN);
+            ListIndex.Add(Expression());
+            result.Add(ListIndex);
+            Expect(TokenCategory.BRACKET_CLOSE);
+        }
+
         public Node SimpleExpression()
         {
             switch (CurrentToken)
             {
                 case TokenCategory.PARENTHESIS_OPEN:
                     Expect(TokenCategory.PARENTHESIS_OPEN);
-                    var result = Expression();
+                    var expr = Expression();
                     Expect(TokenCategory.PARENTHESIS_CLOSE);
 
                     if (CurrentToken == TokenCategory.BRACKET_OPEN)
                     {
-                        Expect(TokenCategory.BRACKET_OPEN);
-                        result.Add(Expression());
-                        Expect(TokenCategory.BRACKET_CLOSE);
+                        var result=new ListItem();
+                        result.Add(expr);
+                        AuxMethod(result);
+                        return result;
+                    }else{
+                        return expr;
                     }
-
-                    return result;
 
                 case TokenCategory.IDENTIFIER:
-                    var resultID = new Identifier()
-                    {
-                        AnchorToken = Expect(TokenCategory.IDENTIFIER)
-                    };
+                    var identifier = Expect(TokenCategory.IDENTIFIER);
                     if (CurrentToken == TokenCategory.PARENTHESIS_OPEN)
                     {
-
-                        resultID.Add(Call());
+                        var result=Call();
+                        result.AnchorToken =identifier;
+                        if(CurrentToken==TokenCategory.BRACE_OPEN)
+                        {
+                            var call= new ListItem();
+                            call.Add(result);
+                            AuxMethod(call);
+                            return call;
+                        }
+                        else{
+                            return result;
+                        }
                     }
-                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
-                    {
-                        Expect(TokenCategory.BRACKET_OPEN);
-                        resultID.Add(Expression());
-                        Expect(TokenCategory.BRACKET_CLOSE);
+                    else{
+                        if (CurrentToken == TokenCategory.BRACKET_OPEN)
+                        {
+                            var id = new ListItem();
+                            id.Add(new Identifier()
+                            {
+                                AnchorToken = identifier
+                            });
+                            AuxMethod(id);
+                            return id;
+                        }
+                        else
+                        {
+                            var id = new Identifier()
+                            {
+                                AnchorToken = identifier
+                            };
+                            return id;
+                        }
                     }
-                    return resultID;
 
                 case TokenCategory.INT_LITERAL:
-                    var resultI = SimpleLiteral();
+                    var literal = new IntegerLiteral(){
+                        AnchorToken = Expect(TokenCategory.INT_LITERAL)
+                    };
                     if (CurrentToken == TokenCategory.BRACKET_OPEN)
                     {
-                        Expect(TokenCategory.BRACKET_OPEN);
-                        resultI.Add(Expression());
-                        Expect(TokenCategory.BRACKET_CLOSE);
+                        var i_literal = new ListItem();
+                        i_literal.Add(literal);
+                        AuxMethod(i_literal);
+                        return i_literal;
                     }
-                    return resultI;
+                    else{
+                        return literal;
+                    }
                 case TokenCategory.STRING_LITERAL:
-                    var resultS = SimpleLiteral();
-                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
-                    {
-                        Expect(TokenCategory.BRACKET_OPEN);
-                        resultS.Add(Expression());
-                        Expect(TokenCategory.BRACKET_CLOSE);
+                    var sliteral= new StringLiteral(){
+                        AnchorToken = Expect(TokenCategory.STRING_LITERAL)
+                    };
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN){
+                        var s_literal = new ListItem();
+                        s_literal.Add(sliteral);
+                        AuxMethod(s_literal);
+                        return s_literal;
                     }
-                    return resultS;
+                    else{
+                        return sliteral;
+                    }
+                        
                 case TokenCategory.TRUE:
-                    var resultT = SimpleLiteral();
-                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
-                    {
-                        Expect(TokenCategory.BRACKET_OPEN);
-                        resultT.Add(Expression());
-                        Expect(TokenCategory.BRACKET_CLOSE);
+                    var tLiteralToken = new TrueLiteral(){
+                        AnchorToken = Expect(TokenCategory.TRUE)
+                    };
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN){
+                        var t_literal = new ListItem();
+                        t_literal.Add(tLiteralToken);
+                        AuxMethod(t_literal);
+                        return t_literal;
                     }
-                    return resultT;
+                    else{
+                        return tLiteralToken;
+                    }
+                        
                 case TokenCategory.FALSE:
-                    var resultF = SimpleLiteral();
+                    var fLiteralToken = new FalseLiteral(){
+                        AnchorToken = Expect(TokenCategory.FALSE)
+                    };
                     if (CurrentToken == TokenCategory.BRACKET_OPEN)
                     {
-                        Expect(TokenCategory.BRACKET_OPEN);
-                        resultF.Add(Expression());
-                        Expect(TokenCategory.BRACKET_CLOSE);
+                        var f_literal = new ListItem();
+                        f_literal.Add(fLiteralToken);
+                        AuxMethod(f_literal);
+                        return f_literal;
                     }
-                    return resultF;
+                    else{
+                        return fLiteralToken;
+                    }
+                        
                 case TokenCategory.BRACE_OPEN:
-                    var resultL = Literal();
-                    if (CurrentToken == TokenCategory.BRACKET_OPEN)
-                    {
-                        Expect(TokenCategory.BRACKET_OPEN);
-                        resultL.Add(Expression());
-                        Expect(TokenCategory.BRACKET_CLOSE);
+                    var lista = List();
+                    if (CurrentToken == TokenCategory.BRACKET_OPEN){
+                        var l_literal = new ListItem();
+                        l_literal.Add(lista);
+                        AuxMethod(l_literal);
+                        return l_literal;
                     }
-                    return resultL;
+                    else{
+                        return lista;
+                    }
+                        
 
                 default:
                     throw new SyntaxError(firstOfSimpleExpression, tokenStream.Current);
