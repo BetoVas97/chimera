@@ -5,111 +5,89 @@
   Gerardo Ezequiel Magdaleno Hernandez A01377029
   Jesus Heriberto Vasquez Sanchez A01377358 
 */
+
 using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Chimera
-{
-
-    class Scanner
-    {
+namespace Chimera {
+   
+    class Scanner {
 
         readonly string input;
 
         static readonly Regex regex = new Regex(
-            @"                             
-                (?<PosibleKeyword>      [a-zA-Z]+               )
-              | (?<Assign>              [=]                     )
-              | (?<ColonEqual>          [:][=]                  )
+            @"         
+              (?<PosibleKeyword>      [a-zA-Z]+                 )                    
+              | (?<Assign>              [:][=]                  )
               | (?<CommentLine>         [/][/]                  )
               | (?<CommentBlockOpen>    [/][*]                  )
-              | (?<CommentBlockClose>   [*][/]                  )
+              | (?<CommentBlockClose>   [*][/]                  )            
               | (?<IntLiteral>          \d+                     )
               | (?<NotEqual>            [!][=]                  )
               | (?<LessEqual>           [<][=]                  )
-              | (?<LessMore>            [<][>]                  )
+              | (?<Equality>            [=]                     )
+              | (?<Inequality>          [<][>]                  )
               | (?<MoreEqual>           [>][=]                  )              
               | (?<Newline>             \n                      )
-              | (?<BooleanLiteral>          (true|false)              )
               | (?<BraceOpen>           [{]                     )
               | (?<BraceClose>          [}]                     )
               | (?<BracketOpen>         [[]                     )
               | (?<BracketClose>        []]                     )
               | (?<Colon>               [:]                     ) 
-              | (?<Coma>                [,]                     ) 
+              | (?<Comma>               [,]                     ) 
               | (?<ParenthesisOpen>     [(]                     )
               | (?<ParenthesisClose>    [)]                     )
-              | (?<Identifier>          [A-Za-z][A-Za-z0-9_]*   ) 
+              | (?<Identifier>          [A-Za-z][A-Za-z0-9_]*   )
               | (?<Less>                [<]                     ) 
               | (?<Minus>               [-]                     ) 
               | (?<More>                [>]                     )
-              | (?<Mul>                 [*]                     )
-              | (?<Plus>                [+]                     )
+              | (?<Mult>                [*]                     )
+              | (?<Sum>                 [+]                     )
               | (?<Semicolon>           [;]                     )
               | (?<StringLiteral>       [""]                    )           
               | (?<WhiteSpace>          \s                      )     # Must go anywhere after Newline.
               | (?<Other>               .                       )     # Must be last: match any other character.
-            ",
-            RegexOptions.IgnorePatternWhitespace
+            ", 
+            RegexOptions.IgnorePatternWhitespace 
                 | RegexOptions.Compiled
                 | RegexOptions.Multiline
             );
 
         static readonly IDictionary<string, TokenCategory> keywords =
             new Dictionary<string, TokenCategory>() {
-                {"and", TokenCategory.AND},
-                {"begin", TokenCategory.BEGIN},
-                {"boolean", TokenCategory.BOOL},
-                {"const", TokenCategory.CONST},
-                {"do", TokenCategory.DO},
-                {"div", TokenCategory.DIV},
-                {"else", TokenCategory.ELSE},
-                {"elseif", TokenCategory.ELSEIF},
-                {"end", TokenCategory.END},
-                {"exit", TokenCategory.EXIT},
+                {"and",TokenCategory.AND},
+                {"begin",TokenCategory.BEGIN},
+                {"boolean",TokenCategory.BOOLEAN},
+                {"const",TokenCategory.CONST},
+                {"div",TokenCategory.DIV},
+                {"do",TokenCategory.DO},
+                {"else",TokenCategory.ELSE},
+                {"elseif",TokenCategory.ELSEIF},
+                {"end",TokenCategory.END},
+                {"exit",TokenCategory.EXIT},
                 {"false", TokenCategory.FALSE},
-                {"for", TokenCategory.FOR},
-                {"if", TokenCategory.IF},
-                {"in", TokenCategory.IN},
-                {"integer", TokenCategory.INTEGER},
-                {"list", TokenCategory.LIST},
-                {"loop", TokenCategory.LOOP},
-                {"not", TokenCategory.NOT},
-                {"of", TokenCategory.OF},
-                {"or", TokenCategory.OR},
+                {"for",TokenCategory.FOR},
+                {"if",TokenCategory.IF},
+                {"in",TokenCategory.IN},
+                {"integer",TokenCategory.INTEGER},
+                {"list",TokenCategory.LIST},
+                {"loop",TokenCategory.LOOP},
+                {"not",TokenCategory.NOT},
+                {"of",TokenCategory.OF},
+                {"or",TokenCategory.OR},
                 {"print", TokenCategory.PRINT},
-                {"procedure", TokenCategory.PROCEDURE},
+                {"procedure",TokenCategory.PROCEDURE},
                 {"program", TokenCategory.PROGRAM},
-                {"rem", TokenCategory.REM},
-                {"return", TokenCategory.RETURN},
-                {"string", TokenCategory.STRING},
-                {"then", TokenCategory.THEN},
+                {"rem",TokenCategory.REM},
+                {"return",TokenCategory.RETURN},
+                {"string",TokenCategory.STRING},
+                {"then",TokenCategory.THEN},
                 {"true", TokenCategory.TRUE},
-                {"var", TokenCategory.VAR},
-
-                {"WrInt", TokenCategory.IDENTIFIER},
-                {"WrStr", TokenCategory.IDENTIFIER},
-                {"WrBool", TokenCategory.IDENTIFIER},
-                {"WrLn", TokenCategory.IDENTIFIER},
-                {"RdInt", TokenCategory.IDENTIFIER},
-                {"RdStr", TokenCategory.IDENTIFIER},
-                {"AtStr", TokenCategory.IDENTIFIER},
-                {"LenStr", TokenCategory.IDENTIFIER},
-                {"CmpStr", TokenCategory.IDENTIFIER},
-                {"CatStr", TokenCategory.IDENTIFIER},
-                {"LenLstInt", TokenCategory.IDENTIFIER},
-                {"LenLstStr", TokenCategory.IDENTIFIER},
-                {"LenLstBool", TokenCategory.IDENTIFIER},
-                {"NewLstInt", TokenCategory.IDENTIFIER},
-                {"NewLstStr", TokenCategory.IDENTIFIER},
-                {"NewLstBool", TokenCategory.IDENTIFIER},
-                {"IntToStr", TokenCategory.IDENTIFIER},
-                {"StrToInt", TokenCategory.IDENTIFIER},
-
-                {"xor", TokenCategory.XOR},
-            };
+                {"var",TokenCategory.VAR},
+                {"xor",TokenCategory.XOR}
+        };
 
         static readonly IDictionary<string, TokenCategory> nonKeywords =
             new Dictionary<string, TokenCategory>() {
@@ -118,12 +96,8 @@ namespace Chimera
                 {"BraceClose", TokenCategory.BRACE_CLOSE},
                 {"BracketOpen", TokenCategory.BRACKET_OPEN},
                 {"BracketClose", TokenCategory.BRACKET_CLOSE},
-                {"CommentLine", TokenCategory.COMMENT_LINE},
-                {"CommentBlockOpen", TokenCategory.COMMENT_BLOCK_OPEN},
-                {"CommentBlockClose", TokenCategory.COMMENT_BLOCK_CLOSE},
                 {"Colon", TokenCategory.COLON},
-                {"ColonEqual", TokenCategory.COLON_EQUAL},
-                {"Coma", TokenCategory.COMA},
+                {"Comma", TokenCategory.COMMA},
                 {"Identifier", TokenCategory.IDENTIFIER},
                 {"IntLiteral", TokenCategory.INT_LITERAL},
                 {"Less", TokenCategory.LESS},
@@ -131,16 +105,19 @@ namespace Chimera
                 {"LessMore", TokenCategory.LESS_MORE},
                 {"Minus", TokenCategory.MINUS},
                 {"More", TokenCategory.MORE},
-                {"MoreEqual", TokenCategory.COMMENT_LINE},
-                {"Mul", TokenCategory.MUL},
+                {"MoreEqual",TokenCategory.MORE_EQUAL},
+                {"Mult", TokenCategory.MULT},
+                {"Neg", TokenCategory.NEGATION},
                 {"ParenthesisOpen", TokenCategory.PARENTHESIS_OPEN},
                 {"ParenthesisClose", TokenCategory.PARENTHESIS_CLOSE},
-                {"Plus", TokenCategory.PLUS},
+                {"Sum", TokenCategory.SUM},
                 {"Semicolon", TokenCategory.SEMICOLON},
-                {"StringLiteral", TokenCategory.STRING_LITERAL},
+                {"Equality", TokenCategory.EQUALITY},
+                {"Inequality", TokenCategory.INEQUALITY},             
+                {"StrLiteral", TokenCategory.STR_LITERAL}
             };
 
-        public Scanner(string input)
+       public Scanner(string input)
         {
             this.input = input;
         }
@@ -347,7 +324,7 @@ namespace Chimera
                     else
                     {
                         //Console.WriteLine("****entre al final de un string*****");
-                        var newToken = newTokenCommentString(concatenatedString, TokenCategory.STRING_LITERAL, commentStringIndex);
+                        var newToken = newTokenCommentString(concatenatedString, TokenCategory.STR_LITERAL, commentStringIndex);
                         concatenatedString = "";
                         commentStringIndex = 0;
                         state = State.NORMAL;
