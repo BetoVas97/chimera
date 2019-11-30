@@ -115,8 +115,8 @@ namespace Chimera{
         }
 
         public Node Program() {
-            var constDecList = new ConstDeclarationList();
-            var varDecList = new VarDeclarationList();
+            var constDecList = new ConstantDeclarationList();
+            var varDecList = new VariableDeclarationList();
             var procedureDecList = new ProcedureDeclarationList();
             var stmlist = new StatementList();
 
@@ -126,7 +126,7 @@ namespace Chimera{
 
                 do
                 {
-                    constDecList.Add(ConstDeclaration());
+                    constDecList.Add(ConstantDeclaration());
                 } while (CurrentToken == TokenCategory.IDENTIFIER);
             }
 
@@ -136,7 +136,7 @@ namespace Chimera{
 
                 do
                 {
-                    varDecList.Add(VarDeclaration());
+                    varDecList.Add(VariableDeclaration());
                 } while (CurrentToken == TokenCategory.IDENTIFIER);
             }
 
@@ -161,9 +161,9 @@ namespace Chimera{
             };
         }
 
-        public Node ConstDeclaration()
+        public Node ConstantDeclaration()
         {
-            var result = new ConstDeclaration()
+            var result = new ConstantDeclaration()
             {
                 AnchorToken = Expect(TokenCategory.IDENTIFIER)
             };
@@ -185,9 +185,9 @@ namespace Chimera{
             return result;
         }
 
-        public Node VarDeclaration()
+        public Node VariableDeclaration()
         {
-            var result = new VarDeclarationItems();
+            var result = new VariableDeclarationItems();
 
             result.Add(new Identifier(){
                 AnchorToken = Expect(TokenCategory.IDENTIFIER)
@@ -205,7 +205,7 @@ namespace Chimera{
 
             Expect(TokenCategory.COLON);
 
-            var final = new VarDeclaration();
+            var final = new VariableDeclaration();
 
 
             if (CurrentToken != TokenCategory.LIST)
@@ -226,7 +226,7 @@ namespace Chimera{
 
         public Node ListType()
         {
-            var result = new ListN()
+            var result = new ListNode()
             {
                 AnchorToken = Expect(TokenCategory.LIST)
             };
@@ -243,15 +243,15 @@ namespace Chimera{
             switch (CurrentToken)
             {
                 case TokenCategory.INTEGER:
-                    return new IntegerN(){
+                    return new IntegerNode(){
             AnchorToken = Expect(TokenCategory.INTEGER)};
 
                 case TokenCategory.STRING:
-                    return new StringN(){
+                    return new StringNode(){
             AnchorToken = Expect(TokenCategory.STRING)};
 
                 case TokenCategory.BOOLEAN:
-                    return new BooleanN(){
+                    return new BooleanNode(){
             AnchorToken = Expect(TokenCategory.BOOLEAN)};
 
                 default:
@@ -336,7 +336,7 @@ namespace Chimera{
             var parametros = new ParameterDeclarationList();
             if (CurrentToken == TokenCategory.IDENTIFIER){
                 while (CurrentToken == TokenCategory.IDENTIFIER){
-                    parametros.Add(VarDeclaration());
+                    parametros.Add(VariableDeclaration());
                 }
             }
     
@@ -344,7 +344,7 @@ namespace Chimera{
 
             Expect(TokenCategory.PARENTHESIS_CLOSE);
 
-            var type = new Tipo();
+            var type = new TypeNode();
             if (CurrentToken == TokenCategory.COLON){
                 Expect(TokenCategory.COLON);
 
@@ -361,26 +361,26 @@ namespace Chimera{
 
             Expect(TokenCategory.SEMICOLON);
 
-            var constDecList = new ConstDeclarationList();
+            var constDecList = new ConstantDeclarationList();
             if (firstOfDeclaration.Contains(CurrentToken) && CurrentToken == TokenCategory.CONST){
 
                 constDecList.AnchorToken = Expect(TokenCategory.CONST);
 
                 do{
-                    constDecList.Add(ConstDeclaration());
+                    constDecList.Add(ConstantDeclaration());
                 } while (CurrentToken == TokenCategory.IDENTIFIER);
 
             }
             result.Add(constDecList);
 
-            var varDecList = new VarDeclarationList();
+            var varDecList = new VariableDeclarationList();
             if (firstOfDeclaration.Contains(CurrentToken) && CurrentToken == TokenCategory.VAR)
             {
                 varDecList.AnchorToken = Expect(TokenCategory.VAR);
 
                 do
                 {
-                    varDecList.Add(VarDeclaration());
+                    varDecList.Add(VariableDeclaration());
                 } while (CurrentToken == TokenCategory.IDENTIFIER);
             }
             result.Add(varDecList);
@@ -409,7 +409,7 @@ namespace Chimera{
                 case TokenCategory.IDENTIFIER:
                     var identifier = Expect(TokenCategory.IDENTIFIER);
                     if (CurrentToken == TokenCategory.PARENTHESIS_OPEN){
-                        var result = CallS();
+                        var result = CallStatement();
                         result.AnchorToken = identifier;
                         return result;
                     }else{
@@ -469,8 +469,8 @@ namespace Chimera{
             return result;
         }
 
-        public Node CallS(){
-            var result = new CallS()
+        public Node CallStatement(){
+            var result = new CallStatement()
             {
                 AnchorToken = Expect(TokenCategory.PARENTHESIS_OPEN)
             };
@@ -901,25 +901,25 @@ namespace Chimera{
                     };
 
                 case TokenCategory.LESS:
-                    return new LessThan()
+                    return new LessOperator()
                     {
                         AnchorToken = Expect(TokenCategory.LESS)
                     };
 
                 case TokenCategory.MORE:
-                    return new GreaterThan()
+                    return new MoreOperator()
                     {
                         AnchorToken = Expect(TokenCategory.MORE)
                     };
 
                 case TokenCategory.LESS_EQUAL:
-                    return new LessEqual()
+                    return new LessEqualOperator()
                     {
                         AnchorToken = Expect(TokenCategory.LESS_EQUAL)
                     };
 
                 case TokenCategory.MORE_EQUAL:
-                    return new GreaterEqual()
+                    return new MoreEqualOperator()
                     {
                         AnchorToken = Expect(TokenCategory.MORE_EQUAL)
                     };

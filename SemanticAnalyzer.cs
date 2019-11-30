@@ -257,7 +257,7 @@ namespace Chimera
             return Type.VOID;
         }
 
-        public Type Visit(CallS node)
+        public Type Visit(CallStatement node)
         {
 
             var nombre = node.AnchorToken.Lexeme;
@@ -463,7 +463,7 @@ namespace Chimera
             return Type.VOID;
         }
 
-        public Type Visit(Tipo node)
+        public Type Visit(TypeNode node)
         {
             try
             {
@@ -483,13 +483,13 @@ namespace Chimera
         }
 
 
-        public Type Visit(VarDeclarationList node)
+        public Type Visit(VariableDeclarationList node)
         {
             VisitChildren(node);
             return Type.VOID;
         }
 
-        public Type Visit(VarDeclaration node)
+        public Type Visit(VariableDeclaration node)
         {
             var category = node[0].AnchorToken.Category;
             var esLista = false; 
@@ -530,13 +530,13 @@ namespace Chimera
             return Type.VOID;
         }
 
-        public Type Visit(ConstDeclarationList node)
+        public Type Visit(ConstantDeclarationList node)
         {
             VisitChildren(node);
             return Type.VOID;
         }
 
-        public Type Visit(ConstDeclaration node)
+        public Type Visit(ConstantDeclaration node)
         {
             var constName = node.AnchorToken.Lexeme;
             var type = Visit((dynamic)node[0]);
@@ -592,7 +592,7 @@ namespace Chimera
                 return Type.LIST;
         }
 
-        public Type Visit(ListN node)
+        public Type Visit(ListNode node)
         {
             var category = node[0].AnchorToken.Category;
 
@@ -894,28 +894,28 @@ namespace Chimera
             return Type.INT;
         }
 
-        public Type Visit(GreaterEqual node)
+        public Type Visit(MoreEqualOperator node)
         {
             VisitBinaryOperator(">=", node, Type.INT);
 
             return Type.BOOL;
         }
 
-        public Type Visit(LessEqual node)
+        public Type Visit(LessEqualOperator node)
         {
             VisitBinaryOperator("<=", node, Type.INT);
 
             return Type.BOOL;
         }
 
-        public Type Visit(GreaterThan node)
+        public Type Visit(MoreOperator node)
         {
             VisitBinaryOperator(">", node, Type.INT);
 
             return Type.BOOL;
         }
 
-        public Type Visit(LessThan node)
+        public Type Visit(LessOperator node)
         {
             VisitBinaryOperator("<", node, Type.INT);
 

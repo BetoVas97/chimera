@@ -25,9 +25,7 @@ namespace Chimera {
 
         //-----------------------------------------------------------
         void PrintAppHeader() {
-            Console.WriteLine("Buttercup compiler, version " + VERSION);
-            Console.WriteLine("Copyright \u00A9 2013 by A. Ortiz, ITESM CEM."                
-            );
+            Console.WriteLine("Chimera compiler, version " + VERSION);
             Console.WriteLine("This program is free software; you may "
                 + "redistribute it under the terms of");
             Console.WriteLine("the GNU General Public License version 3 or "
@@ -79,7 +77,7 @@ namespace Chimera {
                 foreach (var entry in semantic.TableProcedure){
                     Console.WriteLine(entry);
                 }
-                Console.WriteLine("Local Tables");
+                Console.WriteLine("Local Symbol Table");
                 Console.WriteLine("============");
                 foreach (var entry in semantic.localTables)
                 {
