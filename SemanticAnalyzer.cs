@@ -175,6 +175,29 @@ namespace Chimera
             var Ltype = Visit((dynamic)node[1]);
             var listSinge = listSingleType(Ltype);
 
+            string tablaValue="";
+            string temporalValue="";
+
+            //Console.WriteLine("Printing");
+            //Console.WriteLine(node[0].AnchorToken.Lexeme);
+            if(!procedure){
+                tablaValue=Table[node[0].AnchorToken.Lexeme].tipoVariable;
+                if(tablaValue!="VAR"){
+                    throw new SemanticError("For just use VAR",node.AnchorToken);
+                }
+                //Console.WriteLine(Table[node[0].AnchorToken.Lexeme].tipoVariable);
+            }
+            else{
+                temporalValue=TableTemporal[node[0].AnchorToken.Lexeme].tipoVariable;
+                if(temporalValue!="VAR"){
+                    throw new SemanticError("For just use VAR",node.AnchorToken);
+                }
+                    
+            }
+
+            //Console.WriteLine("Finish Printing");
+            
+            //Ltype.node[1].AnchorToken.variable;
             if (listSinge != Stype)
                 throw new SemanticError("Var type must be: " + listSinge + " because exp is of type: " + Ltype, node[0].AnchorToken);
 
@@ -248,7 +271,7 @@ namespace Chimera
                 throw new SemanticError("Return value must be VOID but actual is : " + procedure.tipoRetorno, node.AnchorToken);
 
 
-            List<Type> lista = new List<Type>();
+            List<Type> lista = new List<Type>(){};
 
             string lst = "";
             string obj = "";
@@ -257,27 +280,29 @@ namespace Chimera
             {
                 var temp = Visit((dynamic)n);
 
+
                 lista.Add(temp);
 
                 lst += temp + ",";
             }
-
-
             foreach (var n in procedure.ordenParametros)
             {
 
                 obj += n + ",";
             }
-
+            
             if (obj.Length > 0)
             {
-                lst = lst.Substring(0, lst.Length - 1);
+                if(lst.Length>0){
+                    lst = lst.Substring(0, lst.Length - 1);     
+                }
+                
                 obj = obj.Substring(0, obj.Length - 1);
             }
 
-            if (lista.Count != procedure.numParametros)
+            if (lista.Count != procedure.numParametros){
                 throw new SemanticError("Wrong number of parameters: " + lista.Count + " expecting: " + procedure.numParametros, node.AnchorToken);
-
+            }
             if (lst != obj)
                 throw new SemanticError("Wrong order of parameters: " + lst + " expecting: " + obj, node.AnchorToken);
 
@@ -799,8 +824,14 @@ namespace Chimera
                 obj = obj.Substring(0, obj.Length - 1);
             }
 
-            if (contador != procedure.numParametros)
+            //Console.WriteLine("contador",contador);
+            //Console.WriteLine("contador",procedure.numParametros);
+            if (contador != procedure.numParametros){
                 throw new SemanticError("Wrong number of parameters: " + contador + " expecting: " + procedure.numParametros, node.AnchorToken);
+            }
+            //if(procedure.numParametros>0 && contador<0){
+              //  throw new SemanticError("Wrong number of parameters: " + contador + " expecting: " + procedure.numParametros, node.AnchorToken);
+            //}
 
             if (lst != obj)
                 throw new SemanticError("Wrong order of parameters: " + lst + " expecting: " + obj, node.AnchorToken);
