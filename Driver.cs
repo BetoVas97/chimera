@@ -48,7 +48,7 @@ namespace Chimera {
             PrintReleaseIncludes();
             Console.WriteLine();
 
-            if (args.Length != 1) {
+            if (args.Length != 2) {
                 Console.Error.WriteLine(
                     "Please specify the name of the input file.");
                 Environment.Exit(1);
@@ -56,7 +56,13 @@ namespace Chimera {
 
             string errorLine = "";
             try {            
-                var inputPath = args[0];                
+                var inputPath = args[0];
+                var outputPath = "";
+                try{
+                    outputPath = args[1];
+                }catch(Exception e){
+
+                }
                 var input = File.ReadAllText(inputPath);
                 var parser = new Parser(new Scanner(input).Start().GetEnumerator());
                 var program = parser.Program();
@@ -83,6 +89,16 @@ namespace Chimera {
                      //Console.WriteLine(String.Format("[{0}] {1}", count++, tok));
                      errorLine = String.Format("[{0}] {1}", count++, tok);
                 }*/
+                //-----------------------------------------------------------
+                //CIL Generator
+                Console.WriteLine("prgram: " + (dynamic) program);
+                var codeGenerator = new CILGenerator(semantic.Table, semantic.TableProcedure);
+                codeGenerator.Visit((dynamic) program);
+                //File.WriteAllText(outputPath, codeGenerator.Visit((dynamic) program));
+                //Console.WriteLine("Generated CIL code to '" + outputPath + "'.");
+                //Console.WriteLine();
+
+
             } catch (Exception e) {
 
                 if (e is FileNotFoundException || e is SyntaxError) {
