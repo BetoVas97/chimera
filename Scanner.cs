@@ -432,7 +432,7 @@ namespace Chimera {
                 {
                     category = TokenCategory.COMMENT_LINE;
                 }
-                //yield return newTokenCommentString(concatenatedString, category, commentStringIndex);
+                yield return newTokenCommentString(concatenatedString, category, commentStringIndex);
             }
 
             yield return new Token(null,
