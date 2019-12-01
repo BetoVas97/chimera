@@ -1,896 +1,910 @@
-﻿/*
+/*
   Chimera compiler - SemanticAnalyzer.
   Tomas Bravo Ortiz A01376668
   Gerardo Ezequiel Magdaleno Hernandez A01377029
   Jesus Heriberto Vasquez Sanchez A01377358
 */
+
 using System;
 using System.Collections.Generic;
 
-namespace Chimera {
-
-    class SemanticAnalyzer {
-
-        static readonly IDictionary<TokenCategory, Type> categoryToType =
+namespace Chimera
+{
+    class SemanticAnalyzer
+    {
+        static readonly IDictionary<TokenCategory, Type> typeMapper =
             new Dictionary<TokenCategory, Type>() {
                 { TokenCategory.TRUE, Type.BOOL },
                 { TokenCategory.FALSE, Type.BOOL },
-                { TokenCategory.BOOL, Type.BOOL },
-                
                 { TokenCategory.INT_LITERAL, Type.INT},
-                { TokenCategory.INTEGER, Type.INT},
-
+                { TokenCategory.STR_LITERAL, Type.STRING },
+                { TokenCategory.BRACE_OPEN, Type.LIST },
                 { TokenCategory.STRING, Type.STRING },
-                { TokenCategory.STRING_LITERAL, Type.STRING },
-            };
-
-        //-----------------------------------------------------------
-        static readonly IDictionary<TokenCategory, Type> typeMapper =
-            new Dictionary<TokenCategory, Type>() {
-                { TokenCategory.BOOL, Type.BOOL },
                 { TokenCategory.INTEGER, Type.INT },
-                { TokenCategory.STRING, Type.STRING }
-
+                { TokenCategory.BOOLEAN, Type.BOOL },
+                { TokenCategory.LIST, Type.LISTVAR }
             };
 
-        //-----------------------------------------------------------
+
+        //Global bools and ints requierded later
+        public bool inProcedure;
+        public bool isParam;
+        public int numParams;
+        public List<dynamic> listOrderParams;
+        public int inCycle; //because we can have loop inside loop
+        public string procName;
+
         public ProcedureTable procedureTable
         {
             get;
             private set;
-            
         }
 
-        public bool inProcedure{
-            get;
-            private set;
-        }
-        public bool inCycle{
+        public SymbolTable symbolTable
+        {
             get;
             private set;
         }
 
-        public string procName{
+        public IDictionary<string, SymbolTable> localSTables
+        {
+            get;
+            private set;
+        }
+    
+        public SymbolTable LocalSTable
+        {
             get;
             private set;
         }
 
-        //globalTable
-        public SymbolTable symbolTable {
-            get;
-            private set;
-        }
 
-        public SymbolTable localTable{
-            get; 
-            private set;
-        }
-
-        //-----------------------------------------------------------
-        public SemanticAnalyzer() {
+        public SemanticAnalyzer()
+        {
+            procName = "";
+            inCycle = 0;
+            numParams = 0;
+            listOrderParams = new List<dynamic>();
+            inProcedure = false;
+            isParam = false;
             symbolTable = new SymbolTable();
+            LocalSTable = new SymbolTable();
             procedureTable = new ProcedureTable();
-            localTable=new SymbolTable();
-            inCycle=false;
-            inProcedure=false;
-            procName="";
+            localSTables = new SortedDictionary<string, SymbolTable>();
             
-            //predefined functions
-            procedureTable["WrInt"] = new ProcedureTable.Cell(Type.VOID, true,1, new List<Type>());
-            procedureTable["WrInt"].symbolT["i"] = new SymbolTable.Cell(Type.INT, Kind.PARAM, 0);
-
-            procedureTable["WrStr"] = new ProcedureTable.Cell(Type.VOID, true,1,new List<Type>());
-            procedureTable["WrStr"].symbolT["s"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, 0);
-
-            procedureTable["WrBool"] = new ProcedureTable.Cell(Type.VOID, true,1,new List<Type>());
-            procedureTable["WrBool"].symbolT["b"] = new SymbolTable.Cell(Type.BOOL, Kind.PARAM, 0);
-
-            procedureTable["WrLn"] = new ProcedureTable.Cell(Type.VOID, true,0,new List<Type>());
-
-            procedureTable["RdInt"] = new ProcedureTable.Cell(Type.INT, true,0,new List<Type>());
-            procedureTable["RdStr"] = new ProcedureTable.Cell(Type.STRING, true,0,new List<Type>());
-
-            procedureTable["AtStr"] = new ProcedureTable.Cell(Type.STRING, true,2,new List<Type>());
-            procedureTable["AtStr"].symbolT["s"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
-            procedureTable["AtStr"].symbolT["i"] = new SymbolTable.Cell(Type.INT, Kind.PARAM, pos: 1);
-
-            procedureTable["LenStr"] = new ProcedureTable.Cell(Type.INT, true,1,new List<Type>());
-            procedureTable["LenStr"].symbolT["s"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
-
-            procedureTable["CmpStr"] = new ProcedureTable.Cell(Type.INT, true,2,new List<Type>());
-            procedureTable["CmpStr"].symbolT["s1"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
-            procedureTable["CmpStr"].symbolT["s2"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 1);
-
-            procedureTable["CatStr"] = new ProcedureTable.Cell(Type.STRING, true,2,new List<Type>());
-            procedureTable["CatStr"].symbolT["s1"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
-            procedureTable["CatStr"].symbolT["s2"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 1);
-
-            procedureTable["LenLstInt"] = new ProcedureTable.Cell(Type.INT, true,1,new List<Type>());
-            procedureTable["LenLstInt"].symbolT["loi"] = new SymbolTable.Cell(Type.LIST_OF_INT, Kind.PARAM, pos: 0);
-
-            procedureTable["LenLstStr"] = new ProcedureTable.Cell(Type.INT, true,1,new List<Type>());
-            procedureTable["LenLstStr"].symbolT["los"] = new SymbolTable.Cell(Type.LIST_OF_STRING, Kind.PARAM, pos: 0);
-
-            procedureTable["LenLstBool"] = new ProcedureTable.Cell(Type.INT, true,1,new List<Type>());
-            procedureTable["LenLstBool"].symbolT["lob"] = new SymbolTable.Cell(Type.LIST_OF_BOOL, Kind.PARAM, pos: 0);
-
-            procedureTable["NewLstInt"] = new ProcedureTable.Cell(Type.LIST_OF_INT, true,1,new List<Type>());
-            procedureTable["NewLstInt"].symbolT["size"] = new SymbolTable.Cell(Type.INT, Kind.PARAM, pos: 0);
-
-            procedureTable["NewLstStr"] = new ProcedureTable.Cell(Type.LIST_OF_STRING, true,1,new List<Type>());
-            procedureTable["NewLstStr"].symbolT["size"] = new SymbolTable.Cell(Type.INT, Kind.PARAM, pos: 0);
-
-            procedureTable["NewLstBool"] = new ProcedureTable.Cell(Type.LIST_OF_BOOL, true,1,new List<Type>());
-            procedureTable["NewLstBool"].symbolT["size"] = new SymbolTable.Cell(Type.INT, Kind.PARAM, pos: 0);
-
-            procedureTable["IntToStr"] = new ProcedureTable.Cell(Type.STRING, true,1,new List<Type>());
-            procedureTable["IntToStr"].symbolT["i"] = new SymbolTable.Cell(Type.INT, Kind.PARAM, pos: 0);
-
-            procedureTable["StrToInt"] = new ProcedureTable.Cell(Type.INT, true,1,new List<Type>());
-            procedureTable["StrToInt"].symbolT["s"] = new SymbolTable.Cell(Type.STRING, Kind.PARAM, pos: 0);
-
+            string predefined = "P";
+            SymbolTable sTable = new SymbolTable();
+            procedureTable["WrInt"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
+            procedureTable["WrStr"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.STRING }, sTable);
+            procedureTable["WrBool"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.BOOL }, sTable);
+            procedureTable["WrLn"] = new Procedures(Type.VOID, 0, predefined, new List<dynamic>(), sTable);
+            procedureTable["RdInt"] = new Procedures(Type.INT, 0, predefined, new List<dynamic>(), sTable);
+            procedureTable["RdStr"] = new Procedures(Type.STRING, 0, predefined, new List<dynamic>(), sTable);
+            procedureTable["AtStr"] = new Procedures(Type.STRING, 2, predefined, new List<dynamic>() { Type.STRING, Type.INT }, sTable);
+            procedureTable["LenStr"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.STRING }, sTable);
+            procedureTable["CmpStr"] = new Procedures(Type.INT, 2, predefined, new List<dynamic>() { Type.STRING, Type.STRING }, sTable);
+            procedureTable["CatStr"] = new Procedures(Type.STRING, 2, predefined, new List<dynamic>() { Type.STRING, Type.STRING }, sTable);
+            procedureTable["LenLstInt"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_INT }, sTable);
+            procedureTable["LenLstStr"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_STRING }, sTable);
+            procedureTable["LenLstBool"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_BOOL }, sTable);
+            procedureTable["NewLstInt"] = new Procedures(Type.LIST_OF_INT, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
+            procedureTable["NewLstStr"] = new Procedures(Type.LIST_OF_STRING, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
+            procedureTable["NewLstBool"] = new Procedures(Type.LIST_OF_BOOL, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
+            procedureTable["IntToStr"] = new Procedures(Type.STRING, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
+            procedureTable["StrToInt"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.STRING }, sTable);
         }
 
-        //-----------------------------------------------------------
         public Type Visit(Program node)
         {
+            Visit((dynamic)node[0]); //Constants
+            Visit((dynamic)node[1]); //Variables
+            Visit((dynamic)node[2]); //Procs
+            Visit((dynamic)node[3]); //Statements
+            return Type.VOID;
+        }
+
+        public Type Visit(StatementList node)
+        {
+            VisitChildren(node);
+            return Type.VOID;
+        }
+
+        public Type Visit(Exit node)
+        {
+            if (inCycle==0){
+                throw new SemanticError("Exit statement is just allowed inside a loop", node.AnchorToken);
+            }
+            return Type.VOID;
+        }
+
+        public Type Visit(Return node)
+        {
+            try
+            {
+                Visit((dynamic)node[0]);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                if (inProcedure)
+                {
+                    var procedureType = procedureTable[procName].returnedType;
+                    if (procedureType != Type.VOID){
+                        throw new SemanticError("Return exp must be of procedure's type: " + procedureType + " but is: VOID", node.AnchorToken);
+                    }
+                }
+                else{
+                    return Type.VOID;
+                }
+                    
+            }
+            var type = Visit((dynamic)node[0]);
+            if (inProcedure)
+            {
+                var procedureType = procedureTable[procName].returnedType;
+                if (procedureType != type){
+                    throw new SemanticError("Return exp must be of procedure's type: " + procedureType + " but is: " + type, node.AnchorToken);
+                }
+            }
+            else if(!inProcedure){
+                throw new SemanticError("Return with exp type: " + type + " just can be used inside a procedure", node.AnchorToken);
+            } 
+            return type;
+        }
+
+        public Type Visit(For node)
+        {
+            inCycle +=1 ;
+            var stType = Visit((dynamic)node[0]);
+            var ltType = Visit((dynamic)node[1]);
+            var singleTypeL = singleTypeList(ltType);
+
+            string valueOfTable="";
+            string valueOfLTable="";
+
+            //Console.WriteLine("Printing");
+            //Console.WriteLine(node[0].AnchorToken.Lexeme);
+            if(!inProcedure){
+                valueOfTable=symbolTable[node[0].AnchorToken.Lexeme].kind;
+                if(valueOfTable!="VAR"){
+                    throw new SemanticError("For cycle just use VAR",node.AnchorToken);
+                }
+                //Console.WriteLine(Table[node[0].AnchorToken.Lexeme].kind);
+            }
+            else{
+                valueOfLTable=LocalSTable[node[0].AnchorToken.Lexeme].kind;
+                if(valueOfLTable!="VAR"){
+                    throw new SemanticError("For cycle just use VAR",node.AnchorToken);
+                }
+            }
+
+            //Console.WriteLine("Finish Printing");
+            if (singleTypeL != stType){
+                throw new SemanticError("Var type must be: " + singleTypeL + " since exp is of type: " + ltType, node[0].AnchorToken);
+            }
+            if (ltType == Type.INT || ltType == Type.BOOL || ltType == Type.STRING || ltType == Type.VOID){
+                throw new SemanticError("Exp type cannot be BOOL,INT,STRING, found: " + ltType, node[1].AnchorToken);
+            }                
+            Visit((dynamic)node[2]);
+            inCycle -=0;
+            return Type.VOID;
+        }
+
+        public Type Visit(Loop node)
+        {
+            inCycle += 1;
             Visit((dynamic)node[0]);
+            inCycle -= 1;
+            return Type.VOID;
+        }
+
+
+        public Type Visit(If node)
+        {
+            var condicion = Visit((dynamic)node[0]);
+            if (condicion != Type.BOOL){
+                throw new SemanticError("Exp must be of type BOOL, found: " + condicion, node[0].AnchorToken);
+            }
+
             Visit((dynamic)node[1]);
             Visit((dynamic)node[2]);
             Visit((dynamic)node[3]);
+
             return Type.VOID;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(DeclarationList node) {
-            VisitChildren(node);
-            return Type.VOID;
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(ConstantDeclarationList node)
+        public Type Visit(ElseIfList node)
         {
             VisitChildren(node);
             return Type.VOID;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(VariableDeclarationList node)
+        public Type Visit(ElseIf node)
+        {
+            var condicion = Visit((dynamic)node[0]);
+            if (condicion != Type.BOOL){
+                throw new SemanticError("Exp must be of type BOOL, found: " + condicion, node[0].AnchorToken);
+            }
+            Visit((dynamic)node[1]);
+            return Type.VOID;
+        }
+
+        public Type Visit(Else node)
         {
             VisitChildren(node);
             return Type.VOID;
         }
 
-        //-----------------------------------------------------------
         public Type Visit(ProcedureDeclarationList node)
         {
             VisitChildren(node);
             return Type.VOID;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(StatementList node) {
-            VisitChildren(node);
+        public Type Visit(ProcedureDeclaration node)
+        {
+            var procedureName = node[0].AnchorToken.Lexeme;
+            if (procedureTable.Contains(procedureName)){
+
+                throw new SemanticError("Duplicated identifier: " + procedureName, node[0].AnchorToken);
+            }
+            else
+            {
+                inProcedure = true;
+                isParam = true;
+                Visit((dynamic)node[1]);
+                isParam = false;
+                Visit((dynamic)node[3]);
+                Visit((dynamic)node[4]);
+                var type = Visit((dynamic)node[2]);
+                string noP= "NP";
+                localSTables[procedureName] = LocalSTable;
+                procedureTable[procedureName] = new Procedures(type, listOrderParams.Count, noP, listOrderParams, LocalSTable);
+                procName = procedureName;
+                Visit((dynamic)node[5]);
+                LocalSTable = new SymbolTable();
+                listOrderParams = new List<dynamic>();
+                inProcedure = false;
+                procName = "";
+            }
             return Type.VOID;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(ExpressionList node)
+        public Type Visit(ParameterDeclarationList node)
         {
             VisitChildren(node);
             return Type.VOID;
         }
 
-        public Type SingleType(Type type){
-            if(type == Type.LIST_OF_INT){
-                return Type.INT;
+        public Type Visit(TypeNode node)
+        {
+            try
+            {
+                var type = typeMapper[node[0].AnchorToken.Category];
+                if (type == Type.LISTVAR){
+                    return Visit((dynamic)node[0]);
+                }
+                else{
+                    return type;
+                }
             }
-            else if (type == Type.LIST_OF_BOOL){
+            catch (ArgumentOutOfRangeException)
+            {
+                return Type.VOID;
+            }
+        }
+
+
+        public Type Visit(VariableDeclarationList node)
+        {
+            VisitChildren(node);
+            return Type.VOID;
+        }
+
+        public Type Visit(VariableDeclaration node)
+        {
+            var category = node[0].AnchorToken.Category;
+            var isList = false; 
+            var kind = "VAR";
+            var type = typeMapper[category];
+            dynamic value = null;
+            SymbolTable sTable = symbolTable;
+           
+            if (inProcedure){
+                sTable = LocalSTable;
+            }              
+
+            if (isParam){
+                kind = "PARAM";
+            }                
+
+            foreach (var n in node[1])
+            {
+                var temp = n.AnchorToken.Lexeme;
+                if (type == Type.LISTVAR)
+                {
+                    isList = true;
+                    type = Visit((dynamic)node[0]);
+                }
+
+                if (sTable.Contains(temp)){
+                    throw new SemanticError("Duplicated variable: " + temp, n.AnchorToken);
+                }
+
+                else
+                {
+                    sTable[temp] = new Variables(type, kind, value, isList);
+                    if (isParam)
+                    {
+                        numParams++;
+                        listOrderParams.Add(type);
+                    }
+                }
+            }
+            return Type.VOID;
+        }
+
+        public Type Visit(ConstantDeclarationList node)
+        {
+            VisitChildren(node);
+            return Type.VOID;
+        }
+
+        public Type Visit(ConstantDeclaration node)
+        {
+            var constName = node.AnchorToken.Lexeme;
+            var type = Visit((dynamic)node[0]);
+            var kind = "CONST";
+            dynamic value = node[0].AnchorToken.Lexeme;
+            bool isList = false;
+            SymbolTable symbolT = symbolTable;
+
+            if (inProcedure){
+                symbolT = LocalSTable;
+            }               
+
+            if (type != Type.BOOL && type != Type.STRING && type != Type.INT && type != Type.VOID)
+                try
+                {
+                    //Extract value of list
+                    List<dynamic> temp=new List<dynamic>();
+                    foreach(var n in ((dynamic)node[0])){
+                        Visit((dynamic)n);
+                        temp.Add(n.AnchorToken.Lexeme);
+                    }
+                    value=temp;
+                    isList = true;
+                }
+                catch (ArgumentOutOfRangeException)
+                {
+                    throw new SemanticError("Constant list needs at least 1 value: " + node[0].AnchorToken.Category, node[0].AnchorToken);
+                }
+
+            if (symbolT.Contains(constName)){
+                throw new SemanticError("Duplicated constant: " + constName, node.AnchorToken);
+            }               
+
+            else{
+                symbolT[constName] = new Variables(type, kind, value, isList);
+            }                
+            return Type.VOID;
+        }
+
+        /*public List<dynamic> valorLista(List node)
+        {
+            List<dynamic> aux = new List<dynamic>();
+            foreach (var n in node)
+            {
+                Visit((dynamic)n);
+                aux.Add(n.AnchorToken.Lexeme);
+            }
+            return aux;
+        }*/
+
+        public Type Visit(List node)
+        {
+            var listType = Visit((dynamic)node[0]);
+
+            foreach (var n in node)
+            {
+                var temp = Visit((dynamic)n);
+
+                if (temp != listType){
+                    throw new SemanticError("Incorrect type: " + temp, n.AnchorToken);
+                }
+                    
+            }
+
+            if (listType == Type.INT){
+                return Type.LIST_OF_INT;
+            }                
+            else if (listType == Type.STRING){
+                return Type.LIST_OF_STRING;
+            }               
+            else if (listType == Type.BOOL){
+                return Type.LIST_OF_BOOL;
+            }                
+            else{
+                return Type.LIST;
+            }   
+                
+        }
+
+        public Type Visit(ListNode node)
+        {
+            var category = node[0].AnchorToken.Category;
+
+            if (category == TokenCategory.INTEGER){
+                return Type.LIST_OF_INT;
+            }
+            else if (category == TokenCategory.STRING){
+                return Type.LIST_OF_STRING;
+            }            
+            else if (category == TokenCategory.BOOLEAN){
+                return Type.LIST_OF_BOOL;
+            }            
+            else{
+                return Type.LIST;
+            }   
+        }
+
+        public Type Visit(Int_Literal node)
+        {
+            var tempInt = node.AnchorToken.Lexeme;
+            try
+            {
+                Convert.ToInt32(tempInt);
+            }
+            catch (OverflowException)
+            {
+                throw new SemanticError("Integer literal: "+tempInt+ " too large " , node.AnchorToken);
+            }
+            return Type.INT;
+        }
+
+        public Type Visit(Str_Literal node)
+        {
+            var tempString = node.AnchorToken.Lexeme;
+            try
+            {
+                Convert.ToString(tempString);
+            }
+            catch (OverflowException)
+            {
+                throw new SemanticError("String literal: "+tempString +" too large ", node.AnchorToken);
+            }
+            return Type.STRING;
+        }
+
+        public Type Visit(True node)
+        {
+            return Type.BOOL;
+        }
+
+        public Type Visit(False node)
+        {
+            return Type.BOOL;
+        }
+
+
+        public Type Visit(Identifier node)
+        {
+            var varName = node.AnchorToken.Lexeme;
+            if (inProcedure)
+            {
+                if (!LocalSTable.Contains(varName) && !symbolTable.Contains(varName))
+                    throw new SemanticError("Undeclared variable: " + varName, node[0].AnchorToken);
+
+                if (LocalSTable.Contains(varName))
+                {
+                    Type expectedType = LocalSTable[varName].type;
+                    return expectedType;
+                }
+            }
+        
+            if ((inProcedure && !LocalSTable.Contains(varName)) || !inProcedure)
+            {
+                if (!symbolTable.Contains(varName)){
+                    throw new SemanticError("Undeclared variable: " + varName, node[0].AnchorToken);
+                }                   
+            if (symbolTable.Contains(varName))
+                {
+                    Type expectedType = symbolTable[varName].type;
+                    return expectedType;
+                }
+            }
+            return Type.VOID;
+        }
+
+        public Type singleTypeList(Type expectedType)
+        {
+            if (expectedType == Type.LIST_OF_INT){
+                return Type.INT;
+            }               
+            else if (expectedType == Type.LIST_OF_BOOL){
                 return Type.BOOL;
             }
             else{
                 return Type.STRING;
-            }
+            }                
         }
 
-        /*public Type Visit(Identifier node)
-        {
-            //obtenemos el nombre del identificador
-            var variableName = node.AnchorToken.Lexeme;
+ 
 
-            //si estamos en un procedimiento
+        public Type Visit(ListIndex node)
+        {
+            var index = Visit((dynamic)node[0]);
+            return index;
+        }
+
+        public Type Visit(ListItem node)
+        {
+            var varName = node[0].AnchorToken.Lexeme;
             if (inProcedure)
             {
-                //si no esta en ninguna tabla, no existe la variable
-                if (!TableTemporal.Contains(variableName) && !Table.Contains(variableName))
-                    throw new SemanticError("Undeclared variable: " + variableName, node[0].AnchorToken);
+                if (!LocalSTable.Contains(varName) && !symbolTable.Contains(varName)){
+                    throw new SemanticError("Undeclared variable: " + varName, node[0].AnchorToken);
+                }
 
-                //si existe en la tabla local
-                if (TableTemporal.Contains(variableName))
+                if (LocalSTable.Contains(varName))
                 {
-                    //obtenemos el tipo
-                    Type expectedType = TableTemporal[variableName].tipo;
+                    Type expectedType = LocalSTable[varName].type;
+                    if (expectedType != Type.LIST_OF_INT && expectedType != Type.LIST_OF_STRING && expectedType != Type.LIST_OF_BOOL){
+                        throw new SemanticError("Variable '" + varName + "' is not a list in assignment statement ", node[0].AnchorToken);
+                    }
 
+                    var index = Visit((dynamic)node[1]);
+                    if (index != Type.INT){
+                        throw new SemanticError("Incorrect index, INT expected, found " + index, node[1].AnchorToken);
+                    }                      
+
+                    expectedType = singleTypeList(expectedType);
                     return expectedType;
                 }
             }
-            //si no es un procedimiento o estamos en un procedimiento pero la tabla temporal no la contiene
-            if ((procedure && !TableTemporal.Contains(variableName)) || !procedure)
+            if ((inProcedure && !LocalSTable.Contains(varName)) || !inProcedure)
             {
-                //si la tabla global no la contiene es error
-                if (!Table.Contains(variableName))
-                    throw new SemanticError("Undeclared variable: " + variableName, node[0].AnchorToken);
-
-                //si la tabla la contiene
-                if (Table.Contains(variableName))
+                if (!symbolTable.Contains(varName)){
+                    throw new SemanticError("Undeclared variable: " + varName, node[0].AnchorToken);
+                }                   
+                if (symbolTable.Contains(varName))
                 {
-                    //obtenemos el tipo
-                    Type expectedType = Table[variableName].tipo;
+                    Type expectedType = symbolTable[varName].type;
+                    if (expectedType != Type.LIST_OF_INT && expectedType != Type.LIST_OF_STRING && expectedType != Type.LIST_OF_BOOL){
+                        throw new SemanticError("Variable '" + varName + "' is not a list in assignment statement ", node[0].AnchorToken);
+                    }
 
+                    var index = Visit((dynamic)node[1]);
+                    if (index != Type.INT){
+                        throw new SemanticError("Incorrect index, INT expected, found " + index, node[1].AnchorToken);
+                    }                       
+                    expectedType = singleTypeList(expectedType);
                     return expectedType;
                 }
             }
             return Type.VOID;
-
-        }*/
-
-        //Tommy
-        public Type Visit(SimpleLiteralList node) {
-            VisitChildren(node);
-            return Type.VOID;
-        }
-        //-----------------------------------------------------------
-        public Type Visit(ParameterDeclaration node)
-        {   
-            var typeOfParamenters = categoryToType[node[1].AnchorToken.Category];
-            if (node[1] is SimpleType){ //lista
-                switch (node[1].AnchorToken.Category) {
-                    case (TokenCategory.INTEGER):
-                        typeOfParamenters = Type.LIST_OF_INT;
-                        break;
-                    case (TokenCategory.INT_LITERAL):
-                        typeOfParamenters = Type.LIST_OF_INT;
-                        break;
-                    case (TokenCategory.BOOL):
-                        typeOfParamenters = Type.LIST_OF_BOOL;
-                        break;
-                    case (TokenCategory.FALSE):
-                        typeOfParamenters = Type.LIST_OF_BOOL;
-                        break;
-                    case (TokenCategory.TRUE):
-                        typeOfParamenters = Type.LIST_OF_BOOL;
-                        break;
-                    case (TokenCategory.STRING ):
-                        typeOfParamenters = Type.LIST_OF_STRING;
-                        break;
-                    case (TokenCategory.STRING_LITERAL):
-                        typeOfParamenters = Type.LIST_OF_STRING;
-                        break;
-                    default:
-                        throw new SemanticError("None of this cases",node.AnchorToken);
-                        break;
-                }
-            }
-
-            procedureTable[procName].symbolT[node.AnchorToken.Lexeme] = new SymbolTable.Cell(typeOfParamenters, Kind.PARAM, pos: 0);
-
-            //IEnumerator<Node> listOfIdentifiers = node[0].GetEnumerator();
-            var counter = 1;
-            foreach(Node identifier in node[0] ){
-                if(procedureTable[procName].symbolT.Contains(identifier.AnchorToken.Lexeme)){
-                    throw new SemanticError(
-                        "Duplicated parameter declaration " + identifier.AnchorToken.Lexeme 
-                        + " in method " + procName,
-                        identifier.AnchorToken);
-                }
-                procedureTable[procName].symbolT[identifier.AnchorToken.Lexeme] = new SymbolTable.Cell(typeOfParamenters, Kind.PARAM, pos: counter);
-                counter ++;
-            }
-            
-            return Type.VOID;
         }
 
-        
-        //-----------------------------------------------------------
-        public Type Visit(ProcedureDeclaration node) {
 
-            //IEnumerator<Node> children = node.GetEnumerator();
-            int count = 0;
+        public Type Visit(Assignment node)
+        {
+            var varName = node.AnchorToken.Lexeme;
 
-            
-            foreach (Node item in node)
+            if (inProcedure)
             {
-                if(count != 0){
-                    Visit((dynamic) item);
-                }else{
-                    if(procedureTable.Contains(item.AnchorToken.Lexeme)){
-                        throw new SemanticError(
-                        "Duplicated procedure declaration " + node.AnchorToken.Lexeme,
-                        node.AnchorToken);
-                    }
-                    if(node[2].AnchorToken == null){
-                        List<Type> listOfTypes = new List<Type>();
-                        int countProc = 0;
-                        foreach (var parameter in node[1])
-                        {
-                            Type typeOfParameter = Visit((dynamic) parameter);
-                            listOfTypes.Add(typeOfParameter);
-                            countProc++;
-                        }
-                        procedureTable[item.AnchorToken.Lexeme] = new ProcedureTable.Cell(Type.VOID, true, countProc, listOfTypes);                    } else {
-                        var typeOfProc = categoryToType[item.AnchorToken.Category];
-                        if (item is SimpleType){ //lista
-                            switch (item.AnchorToken.Category) {
-                                case (TokenCategory.INTEGER):
-                                typeOfProc = Type.LIST_OF_INT;
-                                break;
-                            case (TokenCategory.INT_LITERAL):
-                                typeOfProc = Type.LIST_OF_INT;
-                                break;
-                            case (TokenCategory.BOOL):
-                                typeOfProc = Type.LIST_OF_BOOL;
-                                break;
-                            case (TokenCategory.FALSE):
-                                typeOfProc = Type.LIST_OF_BOOL;
-                                break;
-                            case (TokenCategory.TRUE):
-                                typeOfProc = Type.LIST_OF_BOOL;
-                                break;
-                            case (TokenCategory.STRING ):
-                                typeOfProc = Type.LIST_OF_STRING;
-                                break;
-                            case (TokenCategory.STRING_LITERAL):
-                                typeOfProc = Type.LIST_OF_STRING;
-                                break;
-                            default:
-                                throw new SemanticError("None of this cases",node.AnchorToken);
-                                break;
-                            }
-                        }
+                if (!LocalSTable.Contains(varName) && !symbolTable.Contains(varName)){
+                    throw new SemanticError("Undeclared variable: " + varName, node.AnchorToken);
+                }                    
 
-                        List<Type> listOfTypes = new List<Type>();
-                        int countProc = 0;
-                        foreach (var parameter in node[1])
-                        {
-                            Type typeOfParameter = Visit((dynamic) parameter);
-                            listOfTypes.Add(typeOfParameter);
-                            countProc++;
-                        }
-                        
-                        procedureTable[item.AnchorToken.Lexeme] = new ProcedureTable.Cell(typeOfProc, false, countProc, listOfTypes);
-                    }
-                    procName = item.AnchorToken.Lexeme;
-                    inProcedure = true;
-                    
+                if (LocalSTable.Contains(varName))
+                {
+                    if (LocalSTable[varName].kind == "CONST"){
+                        throw new SemanticError("Constant: '" + varName + "' cannot be reasign", node.AnchorToken);
+                    }                       
+
+                    Type expectedType = LocalSTable[varName].type;
+                    if (expectedType != Visit((dynamic)node[0])){
+                        throw new SemanticError("Expecting type " + expectedType + " in assignment statement", node.AnchorToken);
+                    }                        
                 }
-                count++;
             }
-            procName = "";
-            inProcedure = false;
+
+            if ((inProcedure && !LocalSTable.Contains(varName)) || !inProcedure)
+            {
+                if (!symbolTable.Contains(varName)){
+                    throw new SemanticError("Undeclared variable: " + varName, node.AnchorToken);
+
+                }
+
+                if (symbolTable[varName].kind == "CONST"){
+                    throw new SemanticError("Constant: '" + varName + "' cannot be reasign", node.AnchorToken);
+                }                    
+
+                Type expectedType = symbolTable[varName].type;
+                if (expectedType != Visit((dynamic)node[0])){
+                    throw new SemanticError("Expecting type " + expectedType + " in assignment statement", node.AnchorToken);
+                }                    
+            }
+
             return Type.VOID;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(ConstDeclaration node)
+        public Type Visit(ListAssignmentS node)
         {
-            if(inProcedure){
-                if(procedureTable[procName].symbolT.Contains(node[0].AnchorToken.Lexeme)){
-                    throw new SemanticError(
-                        "Duplicated const or variable declaration " + node[0].AnchorToken.Lexeme 
-                        + " in method " + procName,
-                        node[0].AnchorToken);
+            var varName = node.AnchorToken.Lexeme;            
+            if (inProcedure)
+            { 
+                if (!LocalSTable.Contains(varName) && !symbolTable.Contains(varName)){
+                    throw new SemanticError("Undeclared variable: " + varName, node.AnchorToken);
+                }             
+
+                if (LocalSTable.Contains(varName))
+                {
+                    var expectedType = LocalSTable[varName].type;
+                    if (expectedType != Type.LIST_OF_INT && expectedType != Type.LIST_OF_STRING && expectedType != Type.LIST_OF_BOOL){
+                        throw new SemanticError("Variable '" + varName + "' is not a list in assignment statement ", node.AnchorToken);
+                    }                       
+
+                    expectedType = singleTypeList(expectedType);
+                    var indice = Visit((dynamic)node[0]);
+                    if (indice != Type.INT){
+                        throw new SemanticError("Incorrect index, expecting INT, found " + indice, node[0][0].AnchorToken);
+                    }                       
+                    if (expectedType != Visit((dynamic)node[1])){
+                        throw new SemanticError("Expecting type " + expectedType + " in assignment statement", node[1].AnchorToken);
+                    }                        
                 }
-                procedureTable[procName].symbolT[node[0].AnchorToken.Lexeme] = new SymbolTable.Cell(Visit((dynamic) node[1]), Kind.CONST, pos: 0);
-            } else {
-                if(symbolTable.Contains(node[0].AnchorToken.Lexeme)) {
-                    throw new SemanticError(
-                        "Duplicated const or variable declaration " + node[0].AnchorToken.Lexeme,
-                        node[0].AnchorToken);
+            }
+
+            if ((inProcedure && !LocalSTable.Contains(varName)) || !inProcedure)
+            {
+                if (!symbolTable.Contains(varName)){
+                    throw new SemanticError("Undeclared variable: " + varName, node.AnchorToken);
+                }                    
+
+                if (symbolTable.Contains(varName))
+                {
+                    var expectedType = symbolTable[varName].type;
+                    if (expectedType != Type.LIST_OF_INT && expectedType != Type.LIST_OF_STRING && expectedType != Type.LIST_OF_BOOL){
+                        throw new SemanticError("Variable '" + varName + "' not a list in assignment statement ", node.AnchorToken);
+                    }                       
+
+                    expectedType = singleTypeList(expectedType);
+                    var index = Visit((dynamic)node[0]);
+                    if (index != Type.INT){
+                        throw new SemanticError("Incorrect index, expecting INT, found " + index, node[0][0].AnchorToken);
+                    }                      
+
+                    if (expectedType != Visit((dynamic)node[1])){
+                        throw new SemanticError("Expecting type " + expectedType + " in assignment statement", node[1].AnchorToken);
+                    }                        
                 }
-                symbolTable[node[0].AnchorToken.Lexeme] = new SymbolTable.Cell(Visit((dynamic) node[1]), Kind.CONST, pos: 0);
             }
             return Type.VOID;
         }
-        
-        //-----------------------------------------------------------
-        public Type Visit(List node) {
-            Type listType = Visit((dynamic) node[0][0]);
-            //IEnumerator<Node> types = node.GetEnumerator();
-            foreach (Node type in node[0]) {
-                Type nodeType = Visit((dynamic) type);
-                if(nodeType != listType) {
-                    throw new SemanticError("Invalid type: " + nodeType, type.AnchorToken);
-                }
-            }
 
-            var listCategory = node[0][0].AnchorToken.Category;
-
-            switch (listCategory) {
-                    case (TokenCategory.INT_LITERAL):
-                        return Type.LIST_OF_INT;
-                        break;
-                    case (TokenCategory.FALSE):
-                        return Type.LIST_OF_BOOL;
-                        break;
-                    case (TokenCategory.TRUE):
-                        return Type.LIST_OF_BOOL;
-                        break;
-                    case (TokenCategory.STRING_LITERAL):
-                        return Type.LIST_OF_STRING;
-                        break;
-                    default:
-                        throw new SemanticError("None of this cases",node.AnchorToken);
-                        break;
-                }
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(SimpleLiteral node) {
-            return categoryToType[node.AnchorToken.Category];
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(IntegerLiteral node) {
-            var intStr = node.AnchorToken.Lexeme;
-
-            try {
-                Convert.ToInt32(intStr);
-
-            } catch (OverflowException) {
-                throw new SemanticError(
-                    "Integer literal too large: " + intStr, 
-                    node.AnchorToken);
-            }
-            return categoryToType[node.AnchorToken.Category];
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(StringLiteral node) {
-            return categoryToType[node.AnchorToken.Category];
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(TrueLiteral node) {
-            return categoryToType[node.AnchorToken.Category];
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(FalseLiteral node) {
-            return categoryToType[node.AnchorToken.Category];
-        }
-
-
-        //-----------------------------------------------------------
-        public Type Visit(TypeNode node) {
-            Type nodeType = categoryToType[node.AnchorToken.Category];
-            if(node is SimpleType){ //list
-                switch (node.AnchorToken.Category) {
-                    case (TokenCategory.INTEGER):
-                        nodeType = Type.LIST_OF_INT;
-                        break;
-                    case (TokenCategory.BOOL):
-                        nodeType = Type.LIST_OF_BOOL;
-                        break;
-                    case (TokenCategory.STRING):
-                        nodeType = Type.LIST_OF_STRING;
-                        break;
-                    case (TokenCategory.INT_LITERAL):
-                        nodeType = Type.LIST_OF_INT;
-                        break;
-                    case (TokenCategory.TRUE):
-                        nodeType = Type.LIST_OF_BOOL;
-                        break;
-                    case (TokenCategory.STRING_LITERAL):
-                        nodeType = Type.LIST_OF_STRING;
-                        break;
-                    case (TokenCategory.FALSE):
-                        nodeType = Type.LIST_OF_BOOL;
-                        break;
-                    default:
-                        throw new SemanticError("None of this cases",node.AnchorToken);
-                        break;
-
-                }
-            }
-            return nodeType;
-        }
-        //-----------------------------------------------------------
-        public Type Visit(SimpleType node) {
-            return categoryToType[node.AnchorToken.Category];
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(VariableDeclaration node) {
-            Type typeOfVariables = Visit((dynamic) node[0]);
-
-            //IEnumerator<Node> variablesNames = node[1].GetEnumerator();
-            int count = 0;
-            foreach(Node variable in node[1]){
-                if(inProcedure){
-                    if(procedureTable[procName].symbolT.Contains(variable.AnchorToken.Lexeme)){
-                        throw new SemanticError(
-                            "Duplicated variable declaration " + variable.AnchorToken.Lexeme 
-                            + " in method " + procName,
-                            variable.AnchorToken);
-                    }
-                    procedureTable[procName].symbolT[variable.AnchorToken.Lexeme] = new SymbolTable.Cell(typeOfVariables, Kind.VAR, pos: count);
-                } else {
-                    if(symbolTable.Contains(variable.AnchorToken.Lexeme)) {
-                        throw new SemanticError(
-                            "Duplicated const or variable declaration " + variable.AnchorToken.Lexeme,
-                            variable.AnchorToken);
-                    }
-                    symbolTable[variable.AnchorToken.Lexeme] = new SymbolTable.Cell(typeOfVariables, Kind.VAR, pos: count);
-                }
-                count++;
-            }
-
-            return Type.VOID;
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(If node)
+        public Type Visit(CallStatement node)
         {
-            //Revisar expression list (El primero es del if y todos los siguientes son del elseif)
-            //IEnumerator<Node> statements = node[3].GetEnumerator();
-            foreach (var statement in node[3]) {
-                Type typeOfStatement = Visit((dynamic)statement);
-                if(typeOfStatement != Type.BOOL){
-                    throw new SemanticError(
-                            "Wrong type in if-elseif, expected a boolean, but received:  " + typeOfStatement ,
-                            statement.AnchorToken);
-                }
+            var procName = node.AnchorToken.Lexeme;
+            //Not procedure declared
+            if (!procedureTable.Contains(procName)){
+                throw new SemanticError("Undeclared procedure: " + procName, node.AnchorToken);
+            }                
+
+            //Declared then bring name
+            var procedure = procedureTable[procName];
+            if (procedure.returnedType != Type.VOID){
+                throw new SemanticError("Return value must be VOID but is : " + procedure.returnedType, node.AnchorToken);
+            }             
+
+            List<Type> list = new List<Type>();
+            string lst = "";
+            string obj = "";
+            //Iterate between nodes, parameters
+            foreach (var n in node)
+            {
+                var temp = Visit((dynamic)n);
+                list.Add(temp);
+                lst += temp + ",";
+            }
+            foreach (var n in procedure.parametersOrder)
+            {
+                obj += n + ",";
+            }
+            
+            if (obj.Length > 0)
+            {
+                //validate the lenght in lst too
+                if(lst.Length>0){
+                    lst = lst.Substring(0, lst.Length - 1);     
+                }                
+                obj = obj.Substring(0, obj.Length - 1);
             }
 
-            Visit((dynamic)node[0]);
-            Visit((dynamic)node[1]);
-            Visit((dynamic)node[2]);
-            return Type.VOID;
+            if (list.Count != procedure.noParameters){
+                throw new SemanticError("Incorrect number of parameters: " + list.Count + " expecting: " + procedure.noParameters, node.AnchorToken);
+            }
+            if (lst != obj){
+                throw new SemanticError("Incorrect order of parameters: " + lst + " expecting: " + obj, node.AnchorToken);
+            }                
+
+            return procedure.returnedType;
         }
-        //-----------------------------------------------------------
-        public Type Visit(NegationOperator node)
+
+
+        public Type Visit(Call node)
         {
-            VisitUnaryOperator("-",node,Type.INT);
+            var procName = node.AnchorToken.Lexeme;
+
+            if (!procedureTable.Contains(procName)){
+                throw new SemanticError("Undeclared procedure: " + procName, node.AnchorToken);
+            }
+                
+            //Declared then bring name
+            var procedure = procedureTable[procName];
+
+            List<Type> tempList = new List<Type>();
+            int cont = 0;
+            string lst = "";
+            string obj = "";
+            foreach (var n in node)
+            {
+                var temp = Visit((dynamic)n);
+                tempList.Add(temp);
+                cont++;
+                lst += temp + ",";
+            }
+
+            foreach (var n in procedure.parametersOrder)
+            {
+                obj += n + ",";
+            }
+
+            if (obj.Length > 0)
+            {
+                //validate the lenght in lst too
+                if(lst.Length>0){
+                    lst = lst.Substring(0, lst.Length - 1);
+                }                
+                obj = obj.Substring(0, obj.Length - 1);
+            }
+    
+            if (cont != procedure.noParameters){
+                throw new SemanticError("Incorrect number of parameters: " + cont + " expecting: " + procedure.noParameters, node.AnchorToken);
+            }
+
+            if (lst != obj){
+                throw new SemanticError("Incorrect order of parameters: " + lst + " expecting: " + obj, node.AnchorToken);
+            }                
+
+            return procedure.returnedType;
+        }
+
+
+        public Type Visit(Not node)
+        {
+            VisitUnaryOperator("NOT", node, Type.BOOL);
+            return Type.BOOL;
+        }
+
+        public Type Visit(Rem node)
+        {
+            VisitBinaryOperator("REM", node, Type.INT);
             return Type.INT;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(NotOperator node)
+        public Type Visit(Div node)
         {
-            VisitUnaryOperator("-",node,Type.BOOL);
-            return Type.BOOL;
+            VisitBinaryOperator("DIV", node, Type.INT);
+            return Type.INT;
         }
 
-        //Beto
-        //-----------------------------------------------------------
-        public Type Visit(AssignmentStatement node){
-            var varName=node.AnchorToken.Lexeme;
-
-            if(inProcedure){
-                if(!procedureTable.Contains(varName) && !symbolTable.Contains(varName)){
-                    throw new SemanticError("Undeclared variables: "+varName,node.AnchorToken); 
-                }
-                if(symbolTable.Contains(varName)){
-                    if(symbolTable[varName].kind == Kind.CONST){
-                        throw new SemanticError("Constant: "+varName+" already defined",node.AnchorToken);
-                    }
-                    Type expectType = symbolTable[varName].type;
-                    
-                    if(expectType!=Visit((dynamic)node[0])){
-                        throw new SemanticError("Expecting: "+expectType+" type in assignment statement", node.AnchorToken);
-                    }
-                }
-            }
-
-            if ((inProcedure && !symbolTable.Contains(varName)) || !inProcedure)
-            {
-                if (!symbolTable.Contains(varName))
-                    throw new SemanticError("Undeclared variable: " + varName, node.AnchorToken);
-
-                if (symbolTable[varName].kind == Kind.CONST)
-                    throw new SemanticError("Constant: '" + varName + "already defined ", node.AnchorToken);
-
-                Type expectType = symbolTable[varName].type;
-
-                if (expectType != Visit((dynamic)node[0]))
-                    throw new SemanticError("Expecting: " + expectType + " type in assignment statement", node.AnchorToken);
-            }
-            return Type.VOID;
-
-        }
-        //-----------------------------------------------------------
-        public Type Visit(CallStatement node){
-            var procName=node.AnchorToken.Lexeme;
-            //Not procedure declared
-            if(!procedureTable.Contains(procName)){
-                throw new SemanticError("Procedure: "+procName+" undeclared",node.AnchorToken);
-            }
-
-            //Declared then bring name
-            var procedure=procedureTable[procName];
-            if(procedureTable[procName].type != Type.VOID){
-                throw new SemanticError("Return value must be VOID but is : " + procedure.type, node.AnchorToken);
-            }
-
-            //Store
-            List<Type> list=new List<Type>();
-
-            string tempLst = "";
-            string obj = "";
-            //Iterate between nodes, parameters
-            foreach (var n in node)
-            {
-                var temp = Visit((dynamic)n);
-                list.Add(temp);
-                tempLst += temp + ","; //addString
-            }
-
-            //Iterate  between 
-            foreach (var n in procedureTable[procName].orderParameter)
-            {
-                obj += n + ","; //add to string
-            }
-
-            // Manage and delete last ","
-            if (obj.Length > 0)
-            {
-                tempLst = tempLst.Substring(0, tempLst.Length - 1);
-                obj = obj.Substring(0, obj.Length - 1);
-            }
-
-            //Does count match?
-            if (list.Count != procedure.noParameters)
-                throw new SemanticError("Wrong number of parameters: " + list.Count + " expecting: " + procedure.noParameters, node.AnchorToken);
-
-            //Si las cadenas son diferentes, se recibieron parametros en un orden erroneo
-            if (tempLst != obj)
-                throw new SemanticError("Wrong order of parameters: " + tempLst + " expecting: " + obj, node.AnchorToken);
-
-            return procedure.type;
-            
-        }
-
-        public Type Visit(Call node){
-            var procName=node.AnchorToken.Lexeme;
-            //Not procedure declared
-            if(!procedureTable.Contains(procName)){
-                throw new SemanticError("Procedure: "+procName+" undeclared",node.AnchorToken);
-            }
-
-            //Declared then bring name
-            var procedure=procedureTable[procName];
-            if(procedureTable[procName].type != Type.VOID){
-                throw new SemanticError("Return value must be VOID but is : " + procedure.type, node.AnchorToken);
-            }
-
-            //Store
-            List<Type> list=new List<Type>();
-
-            string tempLst = "";
-            string obj = "";
-            //Iterate between nodes, parameters
-            foreach (var n in node)
-            {
-                var temp = Visit((dynamic)n);
-                list.Add(temp);
-                tempLst += temp + ","; //addString
-            }
-
-            //Iterate  between 
-            foreach (var n in procedureTable[procName].orderParameter)
-            {
-                obj += n + ","; //add to string
-            }
-
-            // Manage and delete last ","
-            if (obj.Length > 0)
-            {
-                tempLst = tempLst.Substring(0, tempLst.Length - 1);
-                obj = obj.Substring(0, obj.Length - 1);
-            }
-
-            //Does count match?
-            if (list.Count != procedure.noParameters)
-                throw new SemanticError("Wrong number of parameters: " + list.Count + " expecting: " + procedure.noParameters, node.AnchorToken);
-
-            //Si las cadenas son diferentes, se recibieron parametros en un orden erroneo
-            if (tempLst != obj)
-                throw new SemanticError("Wrong order of parameters: " + tempLst + " expecting: " + obj, node.AnchorToken);
-
-            return procedure.type;
-
-        }
-
-
-
-        //-----------------------------------------------------------
-        public Type Visit(For node){
-            inCycle=true;
-
-            //Type of for
-            var typeCycle=Visit((dynamic)node[0]);
-            var typeListC=Visit((dynamic)node[1]); //Type of list for
-
-            var listType=SingleType(typeListC);//Extract single type of list
-
-            if (listType!=typeCycle){
-                throw new SemanticError("Type of var must be: "+listType+" since the expression is of type"+typeCycle,node[0].AnchorToken);
-            }
-            if(typeListC!=Type.LIST_OF_INT || typeListC!= Type.LIST_OF_STRING || typeListC!= Type.LIST_OF_BOOL){
-                throw new SemanticError("Expresion type must be of List type. No: "+typeCycle,node[0].AnchorToken);
-            } 
-
-            Visit((dynamic)node[2]); //Now visit the statements
-            inCycle=false;
-            return Type.VOID;
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(Loop node){
-            inCycle=true;
-            Visit((dynamic)node[0]); //Now visit the statements
-            inCycle=false;
-            return Type.VOID;
-        }
-        //-----------------------------------------------------------
-        public Type Visit(Exit node) {          
-            if (inCycle == false) {
-                throw new SemanticError("Exit statement just for loops ",node.AnchorToken);
-            }
-            return Type.VOID;
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(Return node) {          
-            try{
-                Visit((dynamic)node[0]); //if return ; just visit.
-            }
-            //Check when it's void
-            catch(ArgumentOutOfRangeException){
-                if(inProcedure==true){
-                    var procedureType= procedureTable[procName].type;
-                    if(procedureType!=Type.VOID){
-                        throw new SemanticError("Return exp and procedure's type: "+procedureType+"must match but return exp is: VOID", node.AnchorToken);
-                    }
-                }
-                else{ 
-                    return Type.VOID; 
-                }
-            }
-            //Now check other types that are not VOID
-            var type= Visit((dynamic)node[0]);
-            if(inProcedure==true){
-                var procedureType= procedureTable[procName].type;
-                if(procedureType!=type){
-                    throw new SemanticError("Return exp and procedure's type: "+procedureType+"must match but return is: "+type, node.AnchorToken);
-                }
-            }
-            else if(inProcedure==false){ 
-                throw new SemanticError("Return exp type: "+type+"not valid outside a procedure",node.AnchorToken);
-            
-            }
-            //else{
-                return type;
-            //}
-        }
-
-        //--------------------------------------------------
-        public Type Visit(And node)
+        public Type Visit(Mult node)
         {
-            VisitBinaryOperator("and", node, Type.BOOL);
-            return Type.BOOL;
+            VisitBinaryOperator("*", node, Type.INT);
+            return Type.INT;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(Or node)
+        public Type Visit(Negation node)
         {
-            VisitBinaryOperator("or", node, Type.BOOL);
-            return Type.BOOL;
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(Xor node)
-        {
-            VisitBinaryOperator("xor", node, Type.BOOL);
-            return Type.BOOL;
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(AssignOperator node)
-        {
-            if (Visit((dynamic)node[0]) == Type.INT)
+            try
             {
-                VisitBinaryOperator("=", node, Type.INT);
+                Visit((dynamic)node[1]);
             }
-            else
+            catch (ArgumentOutOfRangeException)
             {
-                VisitBinaryOperator("=", node, Type.BOOL);
+                VisitUnaryOperator("-", node, Type.INT);
+                return Type.INT;
             }
 
-            return Type.BOOL;
+            VisitBinaryOperator("-", node, Type.INT);
+            return Type.INT;
         }
 
-
-
-        //-----------------------------------------------------------
-        public Type Visit(LessMoreOperator node)
+        public Type Visit(Sum node)
         {
-            if (Visit((dynamic)node[0]) == Type.INT)
-            {
-                VisitBinaryOperator("<>", node, Type.INT);
-            }
-            else
-            {
-                VisitBinaryOperator("<>", node, Type.BOOL);
-            }
-
-            return Type.BOOL;
+            VisitBinaryOperator("+", node, Type.INT);
+            return Type.INT;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(LessOperator node)
+        public Type Visit(Minus node)
         {
-            VisitBinaryOperator("<", node, Type.INT);
-            return Type.BOOL;
+            VisitBinaryOperator("-", node, Type.INT);
+            return Type.INT;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(LessEqualOperator node)
-        {
-            VisitBinaryOperator("<=", node, Type.INT);
-            return Type.BOOL;
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(MoreOperator node)
-        {
-            VisitBinaryOperator(">", node, Type.INT);
-            return Type.BOOL;
-        }
-
-        //-----------------------------------------------------------
         public Type Visit(MoreEqualOperator node)
         {
             VisitBinaryOperator(">=", node, Type.INT);
             return Type.BOOL;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(AdditionOperator node) {
-            VisitBinaryOperator("+", node, Type.INT);
-            return Type.INT;
-        }
-
-        //-----------------------------------------------------------
-        public Type Visit(SubstractionOperator node)
+        public Type Visit(LessEqualOperator node)
         {
-            VisitBinaryOperator("-", node, Type.INT);
-            return Type.INT;
+            VisitBinaryOperator("<=", node, Type.INT);
+            return Type.BOOL;
         }
 
-        //-----------------------------------------------------------
-        public Type Visit(MultiplicantOperator node) {
-            VisitBinaryOperator("*", node, Type.INT);
-            return Type.INT;
+        public Type Visit(MoreOperator node)
+        {
+            VisitBinaryOperator(">", node, Type.INT);
+            return Type.BOOL;
         }
 
-        //-----------------------------------------------------------
-        void VisitChildren(Node node) {
-            foreach (var n in node) {
-                Visit((dynamic) n);
+        public Type Visit(LessOperator node)
+        {
+            VisitBinaryOperator("<", node, Type.INT);
+            return Type.BOOL;
+        }
+
+        public Type Visit(Inequality node)
+        {
+            var op = Visit((dynamic)node[0]);
+
+            if (op == Type.INT){
+                VisitBinaryOperator("<>", node, Type.INT);
             }
+            else{
+                VisitBinaryOperator("<>", node, Type.BOOL);
+            }            
+            return Type.BOOL;
         }
 
-        //-----------------------------------------------------------
-        void VisitBinaryOperator(string op, Node node, Type type) {
-            if (Visit((dynamic) node[0]) != type || 
-                Visit((dynamic) node[1]) != type) {
-                throw new SemanticError(
-                    String.Format(
-                        "Operator {0} requires two operands of type {1}",
-                        op, 
-                        type),
-                    node.AnchorToken);
+        public Type Visit(Equality node)
+        {
+            var op = Visit((dynamic)node[0]);
+
+            if (op == Type.INT){
+                VisitBinaryOperator("=", node, Type.INT);
+            }             
+            else{
+                VisitBinaryOperator("=", node, Type.BOOL);
+            }              
+            return Type.BOOL;
+        }
+
+        public Type Visit(And node)
+        {
+            VisitBinaryOperator("AND", node, Type.BOOL);
+            return Type.BOOL;
+        }
+
+        public Type Visit(Or node)
+        {
+            VisitBinaryOperator("OR", node, Type.BOOL);
+            return Type.BOOL;
+        }
+
+        public Type Visit(Xor node)
+        {
+            VisitBinaryOperator("XOR", node, Type.BOOL);
+            return Type.BOOL;
+        }
+
+        void VisitChildren(Node node)
+        {
+            foreach (var n in node)
+            {
+                Visit((dynamic)n);
             }
         }
 
@@ -906,6 +920,19 @@ namespace Chimera {
                     node[0].AnchorToken);
             }
         }
-    
+
+        void VisitBinaryOperator(string op, Node node, Type type)
+        {
+            if (Visit((dynamic)node[0]) != type || 
+                Visit((dynamic)node[1]) != type){
+                    throw new SemanticError(
+                        String.Format(
+                            "Operator {0} requires two operands of type {1}",
+                            op,
+                            type),
+                        node.AnchorToken);
+            }
+                
+        }
     }
 }

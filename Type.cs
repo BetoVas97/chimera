@@ -7,14 +7,15 @@
 using System;
 namespace Chimera{
     public enum Type{
-        BOOLEAN,
-        INTEGER,
+        BOOL,
+        INT,
         STRING,
+	      LISTVAR,
         VOID,
         LIST,
-        LIST_OF_INTEGER,
+        LIST_OF_INT,
         LIST_OF_STRING,
-        LIST_OF_BOOLEAN
+        LIST_OF_BOOL
 
     }
 

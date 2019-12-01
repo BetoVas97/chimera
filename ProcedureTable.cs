@@ -1,100 +1,95 @@
-﻿/*
+/*
   Chimera compiler - Procedure Table.
   Tomas Bravo Ortiz A01376668
   Gerardo Ezequiel Magdaleno Hernandez A01377029
   Jesus Heriberto Vasquez Sanchez A01377358
 */
+
 using System;
 using System.Text;
 using System.Collections.Generic;
 
-namespace Chimera
-{
+namespace Chimera {
 
-    public class ProcedureTable : IEnumerable<KeyValuePair<string, ProcedureTable.Cell>>
-    {
+    public class Procedures {
+        public Type returnedType;
+        public int noParameters;
+        public string predefined;
+        public SymbolTable localSymbolTable;
+        public List<dynamic> parametersOrder;
 
-        IDictionary<string, ProcedureTable.Cell> data = new SortedDictionary<string, ProcedureTable.Cell>();
-
-        //Cell
-        public class Cell
+        public Procedures(Type returnedType, int noParameters, string predefined, List<dynamic> parametersOrder, SymbolTable localSymbolTable)
         {
-            //Constructor
-            public Cell(Type type, bool isPredefined)
-            {
-                this.type = type;
-                this.isPredefined=isPredefined;
-                symbolTable = new SymbolTable();
-
-            }
-            public Type type { get; private set; }
-            public bool isPredefined { get; private set }
-            public SymbolTable symbolT { get; private set}
-
-            //Returned it
-            public override string ToString()
-            {
-                string temp = "";
-                temp += type;
-                temp += isPredefined;
-                pos += symbolTable;
-                return temp;
-            }
+            this.returnedType = returnedType;
+            this.noParameters = noParameters;
+            this.predefined = predefined;
+            this.localSymbolTable = localSymbolTable;
+            this.parametersOrder = parametersOrder;
         }
 
-        //-----------------------------------------------------------
         public override string ToString()
         {
-            var sb = new StringBuilder();
-            sb.Append("Procedure Table\n");
-            sb.Append("====================\n");
-            foreach (var entry in data)
-            {
-                //Check predefined functions
-                if(entry.Value.isPredefined){
-                    continue;
-                }
-                else{
-                    sb.Append(String.Format("{0}: {1}\n",
-                                                         entry.Key,
-                                                         entry.Value));
-                                                         }
+            string temp="";
+            string inside = "[";
+            foreach(var a in this.parametersOrder) {
+                inside += a+",";
+            }
+            if(inside.Length>1){
+                inside= inside.Substring(0, inside.Length - 1);
+            }
+                
+            inside += "]";
+            temp += this.returnedType + " ";
+            temp +=this.noParameters + " ";
+            temp +=this.predefined+" ";
+            temp +=inside;
+            return temp;
+        }
 
+    }
+
+    public class ProcedureTable: IEnumerable<KeyValuePair<string, Procedures>> {
+
+        IDictionary<string, Procedures> data = new SortedDictionary<string, Procedures>();
+
+        //-----------------------------------------------------------
+        public override string ToString() {
+            var sb = new StringBuilder();
+            sb.Append("Procedures Table\n");
+            sb.Append("====================\n");
+            foreach (var entry in data) {
+                sb.Append(String.Format("{0}: {1}\n", 
+                                        entry.Key, 
+                                        entry.Value.ToString()));
             }
             sb.Append("====================\n");
             return sb.ToString();
         }
 
         //-----------------------------------------------------------
-        //Now we adapt to procedureTable
-        public ProcedureTable.Cell this[string key]
-        {
-            get
-            {
+        public Procedures this[string key] {
+            get {
                 return data[key];
             }
-            set
-            {
+            set {
                 data[key] = value;
             }
         }
 
         //-----------------------------------------------------------
-        public bool Contains(string key)
-        {
+        public bool Contains(string key) {
             return data.ContainsKey(key);
         }
 
         //-----------------------------------------------------------
-        public IEnumerator<KeyValuePair<string, Type>> GetEnumerator()
-        {
+        public IEnumerator<KeyValuePair<string, Procedures>> GetEnumerator() {
             return data.GetEnumerator();
         }
 
         //-----------------------------------------------------------
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
             throw new NotImplementedException();
         }
     }
 }
+

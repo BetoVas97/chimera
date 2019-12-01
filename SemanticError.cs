@@ -7,12 +7,10 @@
 
 using System;
 
-namespace Chimera
-{
+namespace Chimera{
 
     class SemanticError : Exception
     {
-
         public SemanticError(string message, Token token) :
             base(String.Format(
                 "Semantic Error: {0} \n" +

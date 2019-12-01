@@ -17,14 +17,15 @@ namespace Chimera {
 
         //-----------------------------------------------------------
         static readonly string[] ReleaseIncludes = {
-            "Lexical analysis","Syntax analysis","AST construction","Semantic analysis"
+            "Lexical analysis",
+            "Syntactic analysis",
+            "AST construction",
+            "Semantic analysis"
         };
 
         //-----------------------------------------------------------
         void PrintAppHeader() {
             Console.WriteLine("Chimera compiler, version " + VERSION);
-            Console.WriteLine("Copyright \u00A9 2013 by A. Ortiz, ITESM CEM."                
-            );
             Console.WriteLine("This program is free software; you may "
                 + "redistribute it under the terms of");
             Console.WriteLine("the GNU General Public License version 3 or "
@@ -54,7 +55,6 @@ namespace Chimera {
                 Environment.Exit(1);
             }
 
-            //string errorLine = "";
             try {            
                 var inputPath = args[0];                
                 var input = File.ReadAllText(inputPath);
@@ -63,44 +63,38 @@ namespace Chimera {
                 Console.WriteLine("Syntax OK.");
 
                 var semantic = new SemanticAnalyzer();
-                semantic.Visit((dynamic)program);
+                semantic.Visit((dynamic) program);
 
-                //Console.WriteLine(program.ToStringTree());
                 Console.WriteLine("Semantics OK.");
                 Console.WriteLine();
                 Console.WriteLine("Symbol Table");
                 Console.WriteLine("============");
-                foreach (var entry in semantic.symbolTable)
-                {
-                    Console.WriteLine(entry);
+                foreach (var entry in semantic.symbolTable) {
+                    Console.WriteLine(entry);                        
                 }
-                Console.WriteLine("Procedure Table");
+                Console.WriteLine("Procedures Table");
                 Console.WriteLine("============");
-                foreach (var entry in semantic.procedureTable)
+                foreach (var entry in semantic.procedureTable){
+                    Console.WriteLine(entry);
+                }
+                Console.WriteLine("Local Symbol Tables");
+                Console.WriteLine("============");
+                foreach (var entry in semantic.localSTables)
                 {
                     Console.WriteLine(entry);
                 }
-                //Console.WriteLine(String.Format(
-                //    "===== Tokens from: \"{0}\" =====", inputPath)
-                //);
-                //Comentado, código errores.
-                /*var count = 1;
-                foreach (var tok in new Scanner(input).Start()) {
-                     //Console.WriteLine(String.Format("[{0}] {1}", count++, tok));
-                     errorLine = String.Format("[{0}] {1}", count++, tok);
-                }*/
+
             } catch (Exception e) {
 
                 if (e is FileNotFoundException 
-                || e is SyntaxError
-                || e is SemanticError) {
-                    //Console.WriteLine(errorLine);
+                    || e is SyntaxError 
+                    || e is SemanticError) {
                     Console.Error.WriteLine(e.Message);
                     Environment.Exit(1);
                 }
 
                 throw;
-            }        
+            }
         }
 
         //-----------------------------------------------------------
