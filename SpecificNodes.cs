@@ -50,7 +50,7 @@ namespace Chimera {
     class AssignmentType: Node {}
     class ListIndex: Node {}
     class ListItem: Node {}
-    class ListIndexAssignment: Node {}
+    class ListAssignmentS: Node {}
     class SimpleAssignment: Node {}
     class Identifier: Node {}
     class Call: Node {}		

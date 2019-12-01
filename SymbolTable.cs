@@ -1,19 +1,8 @@
 /*
-  Buttercup compiler - Symbol table class.
-  Copyright (C) 2013 Ariel Ortiz, ITESM CEM
-  
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  Chimera compiler - Symbol Table.
+  Tomas Bravo Ortiz A01376668
+  Gerardo Ezequiel Magdaleno Hernandez A01377029
+  Jesus Heriberto Vasquez Sanchez A01377358
 */
 
 using System;
@@ -23,57 +12,71 @@ using System.Collections.Generic;
 namespace Chimera {
 
     public class Variables {
-        public Type tipo;
-        public string tipoVariable;
-        public dynamic valor;
-        public List<dynamic> valorLista;
-        public bool esLista;
+        public Type type;
+        public string kind;
+        public dynamic value;
+        public List<dynamic> valueList;
+        public bool isList;
 
-        public Variables(Type tipo, string tipoVariable, dynamic valor, bool esLista){
-            this.tipo = tipo;
-            this.tipoVariable = tipoVariable;
-            this.esLista = esLista;
-            this.valorLista = new List<dynamic>();
+        public Variables(Type type, string kind, dynamic value, bool isList){
+            this.type = type;
+            this.kind = kind;
+            this.isList = isList;
+            this.valueList = new List<dynamic>();
 
-            if (valor != null)
-                this.valor = valor;
+            if (value != null){
+                this.value = value;
+            }                
 
-            else
-                switch (tipo) {
-                    case Type.INT: this.valor = 0; break;
-                    case Type.BOOL: this.valor = false;break;
-                    case Type.STRING: this.valor = "''";break;
-                    default: this.valorLista = new List<dynamic>(); break;
-                    }
+            else{
+                switch (type) {
+                    case Type.INT: this.value = 0; break;
+                    case Type.BOOL: this.value = false; break;
+                    case Type.STRING: this.value = "''";break;
+                    default: this.valueList = new List<dynamic>(); break;
+                }
+            }
+                
         }
 
-        public Variables(Type tipo, string tipoVariable, List<dynamic> valor,bool esLista)
+        public Variables(Type type, string kind, List<dynamic> value,bool isList)
         {
-            this.tipo = tipo;
-            this.tipoVariable = tipoVariable;
-            this.esLista = esLista;
-            this.valor = null;
+            this.type = type;
+            this.kind = kind;
+            this.isList = isList;
+            this.value = null;
 
-            if (valor != null)
-                this.valorLista = valor;
+            if (value != null){
+                this.valueList = value;
+            }                
 
-            else
-                switch (tipo)
+            else{
+                switch (type)
                 {
-                    case Type.INT: this.valor = 0; break;
-                    case Type.BOOL: this.valor = false; break;
-                    case Type.STRING: this.valor = "''"; break;
-                    default: this.valorLista = new List<dynamic>(); break;
+                    case Type.INT: this.value = 0; break;
+                    case Type.BOOL: this.value = false; break;
+                    case Type.STRING: this.value = "''"; break;
+                    default: this.valueList = new List<dynamic>(); break;
                 }
+            }
         }
 
         public override string ToString()
         {
-            if(!this.esLista)
-                return this.tipo+" " + this.tipoVariable+" "+this.valor;
+            string temp="";
+            if(!this.isList){                
+                temp +=this.type+" ";
+                temp +=this.kind+" ";
+                temp +=this.value;
+                return temp;  
+            }
+                          
             else {
-                string aux = "{" + string.Join(",", this.valorLista.ToArray()) + "}";
-                return this.tipo + " " + this.tipoVariable + " " +aux;
+                string temp2 = "{" + string.Join(",", this.valueList.ToArray()) + "}";
+                temp +=this.type + " ";
+                temp +=this.kind + " ";
+                temp +=temp2;
+                return temp;
             }
 
         }

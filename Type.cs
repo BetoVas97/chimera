@@ -10,7 +10,7 @@ namespace Chimera{
         BOOL,
         INT,
         STRING,
-	VLIST,
+	      LISTVAR,
         VOID,
         LIST,
         LIST_OF_INT,

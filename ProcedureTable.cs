@@ -1,19 +1,8 @@
 /*
-  Buttercup compiler - Symbol table class.
-  Copyright (C) 2013 Ariel Ortiz, ITESM CEM
-  
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
-  
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
-  
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  Chimera compiler - Procedure Table.
+  Tomas Bravo Ortiz A01376668
+  Gerardo Ezequiel Magdaleno Hernandez A01377029
+  Jesus Heriberto Vasquez Sanchez A01377358
 */
 
 using System;
@@ -23,32 +12,38 @@ using System.Collections.Generic;
 namespace Chimera {
 
     public class Procedures {
-        public Type tipoRetorno;
-        public int numParametros;
-        public string predefinido;
-        public SymbolTable tablaLocal;
-        public List<dynamic> ordenParametros;
+        public Type returnedType;
+        public int noParameters;
+        public string predefined;
+        public SymbolTable localSymbolTable;
+        public List<dynamic> parametersOrder;
 
-        public Procedures(Type tipoRetorno, int numParametros, string predefinido, List<dynamic> ordenParametros, SymbolTable tablaLocal)
+        public Procedures(Type returnedType, int noParameters, string predefined, List<dynamic> parametersOrder, SymbolTable localSymbolTable)
         {
-            this.tipoRetorno = tipoRetorno;
-            this.numParametros = numParametros;
-            this.predefinido = predefinido;
-            this.tablaLocal = tablaLocal;
-            this.ordenParametros = ordenParametros;
+            this.returnedType = returnedType;
+            this.noParameters = noParameters;
+            this.predefined = predefined;
+            this.localSymbolTable = localSymbolTable;
+            this.parametersOrder = parametersOrder;
         }
 
         public override string ToString()
         {
-            string aux3 = "[";
-            foreach(var a in this.ordenParametros) {
-                aux3 += a+",";
+            string temp="";
+            string inside = "[";
+            foreach(var a in this.parametersOrder) {
+                inside += a+",";
             }
-            if(aux3.Length>1)
-                aux3= aux3.Substring(0, aux3.Length - 1);
-
-            aux3 += "]";
-            return this.tipoRetorno + " " + this.numParametros + " " + this.predefinido+" "+aux3;
+            if(inside.Length>1){
+                inside= inside.Substring(0, inside.Length - 1);
+            }
+                
+            inside += "]";
+            temp += this.returnedType + " ";
+            temp +=this.noParameters + " ";
+            temp +=this.predefined+" ";
+            temp +=inside;
+            return temp;
         }
 
     }
