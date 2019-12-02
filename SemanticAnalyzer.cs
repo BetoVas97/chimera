@@ -31,6 +31,7 @@ namespace Chimera
         public bool isParam;
         public int numParams;
         public List<dynamic> listOrderParams;
+        public List<string> listOrderParamsName;
         public int inCycle; //because we can have loop inside loop
         public string procName;
 
@@ -65,6 +66,7 @@ namespace Chimera
             inCycle = 0;
             numParams = 0;
             listOrderParams = new List<dynamic>();
+            listOrderParamsName = new List<string>();
             inProcedure = false;
             isParam = false;
             symbolTable = new SymbolTable();
@@ -74,24 +76,24 @@ namespace Chimera
             
             string predefined = "P";
             SymbolTable sTable = new SymbolTable();
-            procedureTable["WrInt"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
-            procedureTable["WrStr"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.STRING }, sTable);
-            procedureTable["WrBool"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.BOOL }, sTable);
-            procedureTable["WrLn"] = new Procedures(Type.VOID, 0, predefined, new List<dynamic>(), sTable);
-            procedureTable["RdInt"] = new Procedures(Type.INT, 0, predefined, new List<dynamic>(), sTable);
-            procedureTable["RdStr"] = new Procedures(Type.STRING, 0, predefined, new List<dynamic>(), sTable);
-            procedureTable["AtStr"] = new Procedures(Type.STRING, 2, predefined, new List<dynamic>() { Type.STRING, Type.INT }, sTable);
-            procedureTable["LenStr"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.STRING }, sTable);
-            procedureTable["CmpStr"] = new Procedures(Type.INT, 2, predefined, new List<dynamic>() { Type.STRING, Type.STRING }, sTable);
-            procedureTable["CatStr"] = new Procedures(Type.STRING, 2, predefined, new List<dynamic>() { Type.STRING, Type.STRING }, sTable);
-            procedureTable["LenLstInt"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_INT }, sTable);
-            procedureTable["LenLstStr"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_STRING }, sTable);
-            procedureTable["LenLstBool"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_BOOL }, sTable);
-            procedureTable["NewLstInt"] = new Procedures(Type.LIST_OF_INT, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
-            procedureTable["NewLstStr"] = new Procedures(Type.LIST_OF_STRING, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
-            procedureTable["NewLstBool"] = new Procedures(Type.LIST_OF_BOOL, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
-            procedureTable["IntToStr"] = new Procedures(Type.STRING, 1, predefined, new List<dynamic>() { Type.INT }, sTable);
-            procedureTable["StrToInt"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.STRING }, sTable);
+            procedureTable["WrInt"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.INT }, sTable, new List<string>() {"i"});
+            procedureTable["WrStr"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.STRING }, sTable, new List<string>() {"i"});
+            procedureTable["WrBool"] = new Procedures(Type.VOID, 1, predefined, new List<dynamic>() { Type.BOOL }, sTable, new List<string>() {"i"});
+            procedureTable["WrLn"] = new Procedures(Type.VOID, 0, predefined, new List<dynamic>(), sTable, new List<string>() {"i"});
+            procedureTable["RdInt"] = new Procedures(Type.INT, 0, predefined, new List<dynamic>(), sTable, new List<string>() {"i"});
+            procedureTable["RdStr"] = new Procedures(Type.STRING, 0, predefined, new List<dynamic>(), sTable, new List<string>() {"i"});
+            procedureTable["AtStr"] = new Procedures(Type.STRING, 2, predefined, new List<dynamic>() { Type.STRING, Type.INT }, sTable, new List<string>() {"i"});
+            procedureTable["LenStr"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.STRING }, sTable, new List<string>() {"i"});
+            procedureTable["CmpStr"] = new Procedures(Type.INT, 2, predefined, new List<dynamic>() { Type.STRING, Type.STRING }, sTable, new List<string>() {"i"});
+            procedureTable["CatStr"] = new Procedures(Type.STRING, 2, predefined, new List<dynamic>() { Type.STRING, Type.STRING }, sTable, new List<string>() {"i"});
+            procedureTable["LenLstInt"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_INT }, sTable, new List<string>() {"i"});
+            procedureTable["LenLstStr"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_STRING }, sTable, new List<string>() {"i"});
+            procedureTable["LenLstBool"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.LIST_OF_BOOL }, sTable, new List<string>() {"i"});
+            procedureTable["NewLstInt"] = new Procedures(Type.LIST_OF_INT, 1, predefined, new List<dynamic>() { Type.INT }, sTable, new List<string>() {"i"});
+            procedureTable["NewLstStr"] = new Procedures(Type.LIST_OF_STRING, 1, predefined, new List<dynamic>() { Type.INT }, sTable, new List<string>() {"i"});
+            procedureTable["NewLstBool"] = new Procedures(Type.LIST_OF_BOOL, 1, predefined, new List<dynamic>() { Type.INT }, sTable, new List<string>() {"i"});
+            procedureTable["IntToStr"] = new Procedures(Type.STRING, 1, predefined, new List<dynamic>() { Type.INT }, sTable, new List<string>() {"i"});
+            procedureTable["StrToInt"] = new Procedures(Type.INT, 1, predefined, new List<dynamic>() { Type.STRING }, sTable, new List<string>() {"i"});
         }
 
         public Type Visit(Program node)
@@ -258,11 +260,12 @@ namespace Chimera
                 var type = Visit((dynamic)node[2]);
                 string noP= "NP";
                 localSTables[procedureName] = LocalSTable;
-                procedureTable[procedureName] = new Procedures(type, listOrderParams.Count, noP, listOrderParams, LocalSTable);
+                procedureTable[procedureName] = new Procedures(type, listOrderParams.Count, noP, listOrderParams, LocalSTable, listOrderParamsName);
                 procName = procedureName;
                 Visit((dynamic)node[5]);
                 LocalSTable = new SymbolTable();
                 listOrderParams = new List<dynamic>();
+                listOrderParamsName = new List<string>();
                 inProcedure = false;
                 procName = "";
             }
@@ -328,15 +331,13 @@ namespace Chimera
 
                 if (sTable.Contains(temp)){
                     throw new SemanticError("Duplicated variable: " + temp, n.AnchorToken);
-                }
-
-                else
-                {
+                } else {
                     sTable[temp] = new Variables(type, kind, value, isList);
                     if (isParam)
                     {
                         numParams++;
                         listOrderParams.Add(type);
+                        listOrderParamsName.Add(temp);
                     }
                 }
             }

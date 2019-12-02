@@ -17,15 +17,14 @@ namespace Chimera {
 
         //-----------------------------------------------------------
         static readonly string[] ReleaseIncludes = {
-            "Lexical analysis",
-            "Syntactic analysis",
-            "AST construction",
-            "Semantic analysis"
+            "Lexical analysis","Syntax analysis","AST construction","Semantic analysis"
         };
 
         //-----------------------------------------------------------
         void PrintAppHeader() {
             Console.WriteLine("Chimera compiler, version " + VERSION);
+            Console.WriteLine("Copyright \u00A9 2013 by A. Ortiz, ITESM CEM."                
+            );
             Console.WriteLine("This program is free software; you may "
                 + "redistribute it under the terms of");
             Console.WriteLine("the GNU General Public License version 3 or "
@@ -49,52 +48,67 @@ namespace Chimera {
             PrintReleaseIncludes();
             Console.WriteLine();
 
-            if (args.Length != 1) {
+            if (args.Length != 2) {
                 Console.Error.WriteLine(
                     "Please specify the name of the input file.");
                 Environment.Exit(1);
             }
 
+            string errorLine = "";
             try {            
-                var inputPath = args[0];                
+                var inputPath = args[0];
+                var outputPath = "";
+                try{
+                    outputPath = args[1];
+                }catch(Exception e){
+
+                }
                 var input = File.ReadAllText(inputPath);
                 var parser = new Parser(new Scanner(input).Start().GetEnumerator());
                 var program = parser.Program();
                 Console.WriteLine("Syntax OK.");
 
                 var semantic = new SemanticAnalyzer();
-                semantic.Visit((dynamic) program);
+                semantic.Visit((dynamic)program);
 
+                //Console.WriteLine(program.ToStringTree());
                 Console.WriteLine("Semantics OK.");
                 Console.WriteLine();
                 Console.WriteLine("Symbol Table");
                 Console.WriteLine("============");
-                foreach (var entry in semantic.symbolTable) {
-                    Console.WriteLine(entry);                        
-                }
-                Console.WriteLine("Procedures Table");
-                Console.WriteLine("============");
-                foreach (var entry in semantic.procedureTable){
-                    Console.WriteLine(entry);
-                }
-                Console.WriteLine("Local Symbol Tables");
-                Console.WriteLine("============");
-                foreach (var entry in semantic.localSTables)
+                foreach (var entry in semantic.symbolTable)
                 {
                     Console.WriteLine(entry);
                 }
+                //Console.WriteLine(String.Format(
+                //    "===== Tokens from: \"{0}\" =====", inputPath)
+                //);
+                //Comentado, código errores.
+                /*var count = 1;
+                foreach (var tok in new Scanner(input).Start()) {
+                     //Console.WriteLine(String.Format("[{0}] {1}", count++, tok));
+                     errorLine = String.Format("[{0}] {1}", count++, tok);
+                }*/
+                //-----------------------------------------------------------
+                //CIL Generator
+                Console.WriteLine("prgram: " + (dynamic) program);
+                var codeGenerator = new CILGenerator(semantic.symbolTable, semantic.procedureTable);
+                codeGenerator.Visit((dynamic) program);
+                File.WriteAllText(outputPath, codeGenerator.Visit((dynamic) program));
+                Console.WriteLine("Generated CIL code to '" + outputPath + "'.");
+                //Console.WriteLine();
+
 
             } catch (Exception e) {
 
-                if (e is FileNotFoundException 
-                    || e is SyntaxError 
-                    || e is SemanticError) {
+                if (e is FileNotFoundException || e is SyntaxError) {
+                    Console.WriteLine(errorLine);
                     Console.Error.WriteLine(e.Message);
                     Environment.Exit(1);
                 }
 
                 throw;
-            }
+            }        
         }
 
         //-----------------------------------------------------------

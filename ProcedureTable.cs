@@ -17,25 +17,36 @@ namespace Chimera {
         public string predefined;
         public SymbolTable localSymbolTable;
         public List<dynamic> parametersOrder;
+        public List<string> parametersNamesOrder;
 
-        public Procedures(Type returnedType, int noParameters, string predefined, List<dynamic> parametersOrder, SymbolTable localSymbolTable)
+        public Procedures(Type returnedType, int noParameters, string predefined, List<dynamic> parametersOrder, SymbolTable localSymbolTable, List<string> namesParamsOrder)
         {
             this.returnedType = returnedType;
             this.noParameters = noParameters;
             this.predefined = predefined;
             this.localSymbolTable = localSymbolTable;
             this.parametersOrder = parametersOrder;
+            this.parametersNamesOrder = namesParamsOrder;
         }
 
         public override string ToString()
         {
             string temp="";
             string inside = "[";
+            string insideNames = "[";
+
             foreach(var a in this.parametersOrder) {
                 inside += a+",";
             }
             if(inside.Length>1){
                 inside= inside.Substring(0, inside.Length - 1);
+            }
+
+            foreach(var a in this.parametersNamesOrder) {
+                insideNames += a+",";
+            }
+            if(insideNames.Length>1){
+                insideNames= insideNames.Substring(0, insideNames.Length - 1);
             }
                 
             inside += "]";
@@ -43,6 +54,7 @@ namespace Chimera {
             temp +=this.noParameters + " ";
             temp +=this.predefined+" ";
             temp +=inside;
+            temp += insideNames;
             return temp;
         }
 

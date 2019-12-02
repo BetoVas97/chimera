@@ -543,18 +543,18 @@ namespace Chimera{
             }
             result.Add(elseIfList);
 
-            var els = new Else();
+            var elseNode = new Else();
             if (CurrentToken == TokenCategory.ELSE){
-                els.AnchorToken = Expect(TokenCategory.ELSE);
+                elseNode.AnchorToken = Expect(TokenCategory.ELSE);
                 if (firstOfStatement.Contains(CurrentToken)){
                     var statementList = new StatementList();
                     while (firstOfStatement.Contains(CurrentToken)){
                         statementList.Add(Statement());
                     }
-                    els.Add(statementList);
+                    elseNode.Add(statementList);
                 }
             }
-            result.Add(els);
+            result.Add(elseNode);
 
             Expect(TokenCategory.END);            
             Expect(TokenCategory.SEMICOLON);
